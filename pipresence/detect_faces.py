@@ -28,18 +28,28 @@ class FaceDetector:
         # Perform inference on the provided image
         print("[INFO] Running inference on the image")
         outputs = self.session.run(None, {self.input_name: input_image})
-        detections = outputs[0]
+        detections = outputs[0][0]
         faces = []
 
         # Iterate over detections and extract faces based on confidence threshold
         for detection in detections:
-            if detection[4] > 0.4:  # Confidence threshold
-                print(f"[DEBUG] Detection confidence: {detection[4]} - Adding face to the list")
-                # Extract bounding box coordinates
-                x1, y1, x2, y2 = int(detection[0]), int(detection[1]), int(detection[2]), int(detection[3])
-                # Crop the detected face from the original image
-                face = image[y1:y2, x1:x2]
-                faces.append(face)
+            if detection[4] > 65:  # Confidence threshold
+                # After detecting faces, add this to draw bounding boxes
+                h, w, _ = image.shape
+                x1, y1, x2, y2 = max(0, int(detection[0])), max(0, int(detection[1])), min(w, int(detection[2])), min(h, int(detection[3]))
+
+                if x2 > x1 and y2 > y1:
+                    face = image[y1:y2, x1:x2]
+                    if face.size != 0:
+                        print(f"[DEBUG] Detection confidence: {detection[4]} - Adding face to the list")
+                        faces.append(face)
+                        # Draw a rectangle on the image for visual verification
+                        cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                        print(f"[DEBUG] Bounding box at: {x1}, {y1}, {x2}, {y2}")
+                    else:
+                        print(f"[WARNING] Cropped face is empty, skipping this detection.")
+                else:
+                    print(f"[WARNING] Invalid bounding box coordinates: ({x1}, {y1}, {x2}, {y2}) - Skipping this detection")
             else:
                 print(f"[DEBUG] Detection confidence too low: {detection[4]} - Ignoring")
         

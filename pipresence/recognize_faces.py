@@ -31,7 +31,7 @@ class FaceRecognizer:
         preprocessed_face = self.preprocess(face_image)
         # Run inference to get the embedding
         embedding = self.session.run(None, {self.input_name: preprocessed_face})[0]
-        return embedding
+        return embedding.flatten()
 
     def compare_embeddings(self, embedding1, embedding2, threshold=0.6):
         # Calculate similarity between two embeddings using cosine similarity
