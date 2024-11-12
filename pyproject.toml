@@ -1,14 +1,23 @@
 [tool.poetry]
 name = "pipresence"
 version = "0.1.0"
-description = ""
-authors = ["elee02 <elyorrasulov1822@gmail.com>"]
+description = "Face recognition pipeline using YOLOv8 and MobileFaceNet for attendance tracking on Raspberry Pi."
+authors = ["elee02 <elyorrasulov1822@gmail.com>", ]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.7"
+click = "^8.0"
+numpy = "^1.21"
+opencv-python = "^4.5"
+onnxruntime = "^1.8"
 
+[tool.poetry.dev-dependencies]
+pytest = "^6.2"
+
+[tool.poetry.scripts]
+pipresence = "pipresence.__main__:run"
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
