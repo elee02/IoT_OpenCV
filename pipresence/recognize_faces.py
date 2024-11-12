@@ -19,8 +19,8 @@ class FaceRecognizer:
         face_resized = cv2.resize(face_image, (112, 112))
         # Normalize pixel values to range [0, 1]
         face_resized = face_resized.astype(np.float32) / 255.0
-        # Change image layout to channel-first format as required by ONNX model
-        face_resized = np.transpose(face_resized, (2, 0, 1))  # Channel first
+        # # Change image layout to channel-first format as required by ONNX model
+        # face_resized = np.transpose(face_resized, (2, 0, 1))  # Channel first
         # Add batch dimension (needed by the model)
         face_resized = np.expand_dims(face_resized, axis=0)
         return face_resized

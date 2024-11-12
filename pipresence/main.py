@@ -23,7 +23,7 @@ def main(data_dir, output_dir, embeddings_file):
     # Initialize face detection and recognition models
     print("[INFO] Initializing models for face detection and recognition")
     detector = FaceDetector(model_path='data/models/yolov8n.onnx')
-    recognizer = FaceRecognizer(model_path='data/models/mobilefacenet.onnx')
+    recognizer = FaceRecognizer(model_path='data/models/mobilefacenet_fixed.onnx')
 
     # Load or create the known face embeddings database
     database = {}
