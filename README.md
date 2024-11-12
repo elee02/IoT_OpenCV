@@ -1,6 +1,6 @@
 # PiPresence
 
-![PiPresence Logo](/home/el02/IoT_OpenCV/data/logo/PiPresence_readme.jpg)
+![PiPresence Logo](data/logo/PiPresence_readme.jpg)
 
 ---
 
