@@ -10,6 +10,8 @@ class FaceRecognizer:
         # Load MobileFaceNet ONNX model
         print(f"[INFO] Loading MobileFaceNet model from {model_path}")
         self.session = ort.InferenceSession(model_path)
+        # Get the input name for the ONNX model
+        self.input_name = self.session.get_inputs()[0].name
 
     def preprocess(self, face_image):
         # Resize the face image to the required input size for the model
@@ -28,7 +30,7 @@ class FaceRecognizer:
         print("[INFO] Generating face embedding")
         preprocessed_face = self.preprocess(face_image)
         # Run inference to get the embedding
-        embedding = self.session.run(None, {'input': preprocessed_face})[0]
+        embedding = self.session.run(None, {self.input_name: preprocessed_face})[0]
         return embedding
 
     def compare_embeddings(self, embedding1, embedding2, threshold=0.6):

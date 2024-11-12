@@ -36,9 +36,9 @@ class ImagePreprocessor:
                             if image is None:
                                 raise ValueError(f"[ERROR] Unable to read image at {image_path}")
                             
-                            # Resize image to a standard size (e.g., 640x480)
-                            print("[INFO] Resizing image to 640x480")
-                            resized_image = cv2.resize(image, (640, 480))
+                            # Resize image to a standard size (e.g., 640x640)
+                            print("[INFO] Resizing image to 640x640")
+                            resized_image = cv2.resize(image, (640, 640))
                             
                             # Normalize the image values to [0, 1]
                             print("[INFO] Normalizing image values to [0, 1]")

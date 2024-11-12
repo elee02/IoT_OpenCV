@@ -1,4 +1,3 @@
-
 # This script will represent the main workflow for face detection and recognition.
 
 # pipresence/main.py
@@ -6,6 +5,7 @@ import cv2
 from pipresence.detect_faces import FaceDetector
 from pipresence.recognize_faces import FaceRecognizer
 from pipresence.preprocess import ImagePreprocessor
+import numpy as np
 import os
 import pickle
 import click
@@ -13,7 +13,7 @@ import click
 @click.command()
 @click.option('--data-dir', default='data/images/', help='Directory for raw images.')
 @click.option('--output-dir', default='data/known_faces/', help='Directory to store preprocessed images.')
-@click.option('--embeddings-file', default='data/face_embeddings.pkl', help='Path to save/load face embeddings.')
+@click.option('--embeddings-file', default='data/encodings/face_embeddings.pkl', help='Path to save/load face embeddings.')
 def main(data_dir, output_dir, embeddings_file):
     # Preprocess known faces
     print("[INFO] Starting preprocessing of known faces")
@@ -22,8 +22,8 @@ def main(data_dir, output_dir, embeddings_file):
 
     # Initialize face detection and recognition models
     print("[INFO] Initializing models for face detection and recognition")
-    detector = FaceDetector(model_path='yolov8n.onnx')
-    recognizer = FaceRecognizer(model_path='mobilefacenet.onnx')
+    detector = FaceDetector(model_path='data/models/yolov8n.onnx')
+    recognizer = FaceRecognizer(model_path='data/models/mobilefacenet.onnx')
 
     # Load or create the known face embeddings database
     database = {}
@@ -107,4 +107,3 @@ def main(data_dir, output_dir, embeddings_file):
     cap.release()
     cv2.destroyAllWindows()
     print("[INFO] Camera feed closed, application terminated")
-    
