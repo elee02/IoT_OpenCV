@@ -1,8 +1,6 @@
-# PiPresence
-
-![PiPresence Logo](data/logo/PiPresence_readme.jpg)
-
----
+<h1 align="center">
+<img src="data/logo/PiPresence_readme.jpg" width=500>
+</h1>
 
 ## Revolutionizing Attendance with the Power of Edge Computing
 
