@@ -5,12 +5,15 @@ import cv2
 import numpy as np
 import os
 import pickle
+from pipresence.config import Config
 
-class ImagePreprocessor:
+class ImagePreprocessor(Config):
     def __init__(self):
-        pass
+        super().__init__()
 
-    def preprocess_known_faces(self, input_directory, output_directory):
+    def preprocess_known_faces(self, input_directory=None, output_directory=None):
+        input_directory = input_directory or self.input_directory
+        output_directory = output_directory or self.output_directory
         # Create output directory if it doesn't exist
         if not os.path.exists(output_directory):
             os.makedirs(output_directory)
@@ -36,9 +39,9 @@ class ImagePreprocessor:
                             if image is None:
                                 raise ValueError(f"[ERROR] Unable to read image at {image_path}")
                             
-                            # Resize image to a standard size (e.g., 640x640)
-                            print("[INFO] Resizing image to 640x640")
-                            resized_image = cv2.resize(image, (640, 640))
+                            # Resize image to a standard size
+                            print(f"[INFO] Resizing image to {self.image_size}")
+                            resized_image = cv2.resize(image, self.image_size)
                             
                             # Normalize the image values to [0, 1]
                             print("[INFO] Normalizing image values to [0, 1]")

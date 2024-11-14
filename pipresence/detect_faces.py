@@ -1,56 +1,98 @@
-# This script will handle face detection using YOLOv8n with ONNX Runtime.
+# detect_faces.py with changes for YOLOv8n output handling and integration with the pipresence project
 
-# pipresence/detect_faces.py
 import onnxruntime as ort
 import numpy as np
 import cv2
+import cv2.dnn
+import numpy as np
 
-class FaceDetector:
-    def __init__(self, model_path='yolov8n.onnx'):
+from ultralytics.utils import ASSETS, yaml_load
+from ultralytics.utils.checks import check_yaml
+from pipresence.config import Config
+
+class FaceDetector(Config):
+    def __init__(self):
+        super().__init__()
         # Load YOLOv8 nano model with ONNX Runtime
-        print(f"[INFO] Loading YOLOv8n model from {model_path}")
-        self.session = ort.InferenceSession(model_path)
-        # Get the input name for the ONNX model
-        self.input_name = self.session.get_inputs()[0].name
+        self.model: cv2.dnn.Net = cv2.dnn.readNetFromONNX(self.yolo_model_path)
+        print(f"[INFO] Loading YOLOv8n model from {self.yolo_model_path}")
+        # Load classes from COCO8 configuration
+        self.classes = yaml_load(check_yaml(self.classes_file))["names"]
+        # Initialize ONNX Runtime session and generate random colors for each class
+        self.colors = np.random.uniform(0, 255, size=(len(self.classes), 3))
 
-    def detect_faces(self, image):
-        # Preprocess image for ONNX model
-        print("[INFO] Preprocessing image for face detection")
-        # Resize image to the required size for YOLO model
-        input_image = cv2.resize(image, (640, 640))
-        # Normalize pixel values to range [0, 1]
-        input_image = input_image.astype(np.float32) / 255.0
-        # Change image layout to channel-first format as required by ONNX model
-        input_image = np.transpose(input_image, (2, 0, 1))  # Channel first
-        # Add batch dimension (needed by the model)
-        input_image = np.expand_dims(input_image, axis=0)
+    def detect_faces(self, original_image):
+        """
+        Main function to perform inference, draw bounding boxes.
 
-        # Perform inference on the provided image
-        print("[INFO] Running inference on the image")
-        outputs = self.session.run(None, {self.input_name: input_image})
-        detections = outputs[0][0]
-        faces = []
+        Args:
+            original_image (numpy.ndarray): ndarray of the input image.
 
-        # Iterate over detections and extract faces based on confidence threshold
-        for detection in detections:
-            if detection[4] > 65:  # Confidence threshold
-                # After detecting faces, add this to draw bounding boxes
-                h, w, _ = image.shape
-                x1, y1, x2, y2 = max(0, int(detection[0])), max(0, int(detection[1])), min(w, int(detection[2])), min(h, int(detection[3]))
+        Returns:
+            list: List of dictionaries containing detection information such as class_id, class_name, confidence, etc.
+        """
+        # Read the input image
+        [height, width, _] = original_image.shape
 
-                if x2 > x1 and y2 > y1:
-                    face = image[y1:y2, x1:x2]
-                    if face.size != 0:
-                        print(f"[DEBUG] Detection confidence: {detection[4]} - Adding face to the list")
-                        faces.append(face)
-                        # Draw a rectangle on the image for visual verification
-                        cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 0), 2)
-                        print(f"[DEBUG] Bounding box at: {x1}, {y1}, {x2}, {y2}")
-                    else:
-                        print(f"[WARNING] Cropped face is empty, skipping this detection.")
-                else:
-                    print(f"[WARNING] Invalid bounding box coordinates: ({x1}, {y1}, {x2}, {y2}) - Skipping this detection")
-            else:
-                print(f"[DEBUG] Detection confidence too low: {detection[4]} - Ignoring")
-        
-        return faces, detections  # Return detected faces and detection data
+        # Prepare a square image for inference
+        length = max((height, width))
+        image = np.zeros((length, length, 3), np.uint8)
+        image[0:height, 0:width] = original_image
+
+        # Calculate scale factor
+        scale = length / self.image_size[0]
+
+        # Preprocess the image and prepare blob for model
+        blob = cv2.dnn.blobFromImage(image, scalefactor=1 / 255, size=(640, 640), swapRB=True)
+        self.model.setInput(blob)
+
+        # Perform inference
+        outputs = self.model.forward()
+
+        # Prepare output array
+        outputs = np.array([cv2.transpose(outputs[0])])
+        rows = outputs.shape[1]
+
+        boxes = []
+        scores = []
+        class_ids = []
+
+        # Iterate through output to collect bounding boxes, confidence scores, and class IDs
+        for i in range(rows):
+            classes_scores = outputs[0][i][4:]
+            (minScore, maxScore, minClassLoc, (x, maxClassIndex)) = cv2.minMaxLoc(classes_scores)
+            # if maxScore >= 0.25:
+            if maxScore >= self.detection_threshold and self.classes[maxClassIndex] == "person":
+                box = [
+                    outputs[0][i][0] - (0.5 * outputs[0][i][2]),
+                    outputs[0][i][1] - (0.5 * outputs[0][i][3]),
+                    outputs[0][i][2],
+                    outputs[0][i][3],
+                ]
+                boxes.append(box)
+                scores.append(maxScore)
+                class_ids.append(maxClassIndex)
+
+        # Apply NMS (Non-maximum suppression)
+        result_boxes = cv2.dnn.NMSBoxes(boxes, scores, 0.25, 0.45, 0.5)
+
+        detections = []
+
+        # Iterate through NMS results to draw bounding boxes and labels
+        for i in range(len(result_boxes)):
+            index = result_boxes[i]
+            box = boxes[index]
+            x = round(box[0] * scale)
+            y = round(box[1] * scale)
+            x_plus_w = round((box[0] + box[2]) * scale)
+            y_plus_h = round((box[1] + box[3]) * scale)
+            detection = {
+                "class_id": class_ids[index],
+                "class_name": self.classes[class_ids[index]],
+                "confidence": scores[index],
+                "box": box,
+                "scale": scale,
+            }
+            detections.append(detection)
+
+        return detections
