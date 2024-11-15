@@ -25,19 +25,12 @@ class Config:
         self.classes_file = 'coco8.yaml'
         self.log_level = 'INFO'
 
-    def parse_args(self):
-        parser = argparse.ArgumentParser(description='pipresence CLI tool')
-        parser.add_argument('--input', type=str, help='Input directory for images')
-        parser.add_argument('--output', type=str, help='Output directory for recognized faces')
-        parser.add_argument('--camera', action='store_true', help='Use device camera for real-time recognition')
-        args = parser.parse_args()
-        
-        if args.input:
-            self.input_directory = args.input
-        if args.output:
-            self.output_directory = args.output
-        else:
-            self.output_directory = self.input_directory
+    def set_config(self, **kwargs):
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+            else:
+                print(f"[WARNING] {key} is not a valid attribute of Config")
 
     def display_config(self):
         print(f"YOLO Model Path: {self.yolo_model_path}")

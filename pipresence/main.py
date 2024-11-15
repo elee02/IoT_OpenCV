@@ -5,6 +5,9 @@ import cv2
 from pipresence.detect_faces import FaceDetector
 from pipresence.recognize_faces import FaceRecognizer
 from pipresence.preprocess import ImagePreprocessor
+from pipresence.tools.utils import (
+    encode_faces
+)
 import numpy as np
 import os
 import pickle
@@ -15,15 +18,37 @@ from pipresence.config import Config
 @click.option('--input-dir', default='data/test_images',type=str, help='Input directory for images')
 @click.option('--output-dir', type=str, help='Output directory for recognized faces')
 @click.option('--camera', is_flag=True, help='Use device camera for real-time recognition')
-def main(input_dir, output_dir, camera):
+@click.option('--encode', is_flag=True, help='Encode the preprocessed images in the given directory')
+@click.option('--encode-in', default='data/images/', type=str, help='Structured images directory in the data/image/[person\'s name]/[left/front/right.jpg/png] format')
+@click.option('--encode-out', default='data/encodings/face_encodings.pkl', type=str, help="Encoding output file path")
+def main(input_dir, output_dir, camera, encode, encode_in, encode_out):
     config = Config()
     if input_dir:
-        config.input_directory = input_dir
+        config.set_config(input_directory=input_dir)
     if output_dir:
-        config.output_directory = output_dir
+        config.set_config(output_directory=output_dir)
     else:
-        config.output_directory = config.input_directory
+        config.set_config(output_directory=config.input_directory)
 
+    # Initialize face detection and recognition models
+    print("[INFO] Initializing models for face detection and recognition")
+    detector = FaceDetector()
+    recognizer = FaceRecognizer()
+
+    if encode:
+        encode_faces(
+            config=config, 
+            recognizer=recognizer
+        )
+
+    if os.path.exists(config.embeddings_file):
+        # Load existing embeddings from the file
+        print(f"[INFO] Loading known face embeddings from {config.embeddings_file}")
+        with open(config.embeddings_file, 'rb') as f:
+            database = pickle.load(f)
+    else:
+        raise Exception("[ERROR] No embeddings found")
+    
     if camera:
         # Start the camera feed to detect and recognize faces
         print("[INFO] Starting camera feed for face detection and recognition")
@@ -80,49 +105,9 @@ def main(input_dir, output_dir, camera):
         # Preprocess known faces
         print("[INFO] Starting preprocessing of known faces")
         preprocessor = ImagePreprocessor()
-        preprocessor.preprocess_known_faces(config.input_directory, config.output_directory)
+        preprocessor.preprocess_known_faces(config.input_directory, preprocessor.output_directory)
 
-        # Initialize face detection and recognition models
-        print("[INFO] Initializing models for face detection and recognition")
-        detector = FaceDetector(model_path=config.yolo_model_path)
-        recognizer = FaceRecognizer(model_path=config.mobilefacenet_model_path)
-
-        # Load or create the known face embeddings database
-        database = {}
-
-        if os.path.exists(config.embeddings_file):
-            # Load existing embeddings from the file
-            print(f"[INFO] Loading known face embeddings from {config.embeddings_file}")
-            with open(config.embeddings_file, 'rb') as f:
-                database = pickle.load(f)
-        else:
-            # Generate embeddings for known faces
-            print("[INFO] Generating known face embeddings")
-            database_path = config.output_directory
-            for person_name in os.listdir(database_path):
-                person_path = os.path.join(database_path, person_name)
-                if os.path.isdir(person_path):
-                    embeddings = []
-                    # Process each profile image: left, front, right
-                    for profile in ['left', 'front', 'right']:
-                        image_path = os.path.join(person_path, f"{profile}.jpg")
-                        if os.path.exists(image_path):
-                            known_image = cv2.imread(image_path)
-                            if known_image is None:
-                                print(f"[WARNING] Could not read image {image_path}, skipping.")
-                                continue
-                            # Generate embedding for the known face
-                            embedding = recognizer.recognize_face(known_image)
-                            embeddings.append(embedding)
-                    if embeddings:
-                        # Average the embeddings from different profiles to get a more robust representation
-                        average_embedding = np.mean(embeddings, axis=0)
-                        database[person_name] = average_embedding
-                        print(f"[INFO] Added {person_name} to the known faces database")
-            # Save embeddings to a file for future use
-            with open(config.embeddings_file, 'wb') as f:
-                pickle.dump(database, f)
-            print(f"[INFO] Saved known face embeddings to {config.embeddings_file}")
+        
 
 if __name__ == '__main__':
     main()

@@ -8,23 +8,24 @@ import pickle
 from pipresence.config import Config
 
 class ImagePreprocessor(Config):
-    def __init__(self):
+    def __init__(self, input_directory=None, output_directory=None):
         super().__init__()
+        self.input_directory = input_directory or "data/images"
+        self.output_directory = output_directory or "data/known_faces"
 
-    def preprocess_known_faces(self, input_directory=None, output_directory=None):
-        input_directory = input_directory or self.input_directory
-        output_directory = output_directory or self.output_directory
+
+    def preprocess_known_faces(self):
         # Create output directory if it doesn't exist
-        if not os.path.exists(output_directory):
-            os.makedirs(output_directory)
+        if not os.path.exists(self.output_directory):
+            os.makedirs(self.output_directory)
         
         # Iterate over each person's folder in the input directory
-        for person_name in os.listdir(input_directory):
-            person_path = os.path.join(input_directory, person_name)
+        for person_name in os.listdir(self.input_directory):
+            person_path = os.path.join(self.input_directory, person_name)
             if os.path.isdir(person_path):
                 print(f"[INFO] Preprocessing known faces for: {person_name}")
                 # Create output sub-directory for the person if it doesn't exist
-                person_output_path = os.path.join(output_directory, person_name)
+                person_output_path = os.path.join(self.output_directory, person_name)
                 if not os.path.exists(person_output_path):
                     os.makedirs(person_output_path)
                 

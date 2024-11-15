@@ -11,8 +11,9 @@ from ultralytics.utils.checks import check_yaml
 from pipresence.config import Config
 
 class FaceDetector(Config):
-    def __init__(self):
+    def __init__(self, model_path=None):
         super().__init__()
+        self.yolo_model_path = model_path or self.yolo_model_path
         # Load YOLOv8 nano model with ONNX Runtime
         self.model: cv2.dnn.Net = cv2.dnn.readNetFromONNX(self.yolo_model_path)
         print(f"[INFO] Loading YOLOv8n model from {self.yolo_model_path}")

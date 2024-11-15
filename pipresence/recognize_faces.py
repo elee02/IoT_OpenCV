@@ -7,8 +7,9 @@ import onnxruntime as ort
 import cv2
 
 class FaceRecognizer(Config):
-    def __init__(self):
+    def __init__(self, model_path: str):
         super().__init__()
+        self.mobilefacenet_model_path = model_path or self.mobilefacenet_model_path
         # Load MobileFaceNet ONNX model
         print(f"[INFO] Loading MobileFaceNet model from {self.mobilefacenet_model_path}")
         self.session = ort.InferenceSession(self.mobilefacenet_model_path)
