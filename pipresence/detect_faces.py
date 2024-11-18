@@ -1,6 +1,4 @@
 # detect_faces.py with changes for YOLOv8n output handling and integration with the pipresence project
-
-import onnxruntime as ort
 import numpy as np
 import cv2
 import cv2.dnn
@@ -16,12 +14,8 @@ class FaceDetector(Config):
         self.yolo_model_path = model_path or self.yolo_model_path
         # Load YOLOv8 nano model with ONNX Runtime
         self.model: cv2.dnn.Net = cv2.dnn.readNetFromONNX(self.yolo_model_path)
-        print(f"[INFO] Loading YOLOv8n model from {self.yolo_model_path}")
-        # Load classes from COCO8 configuration
-        self.classes = yaml_load(check_yaml(self.classes_file))["names"]
-        # Initialize ONNX Runtime session and generate random colors for each class
-        self.colors = np.random.uniform(0, 255, size=(len(self.classes), 3))
-
+        print(f"[INFO] Loading YOLOv8n face-model from {self.yolo_model_path}")
+        
     def detect_faces(self, original_image):
         """
         Main function to perform inference, draw bounding boxes.
@@ -63,7 +57,7 @@ class FaceDetector(Config):
             classes_scores = outputs[0][i][4:]
             (minScore, maxScore, minClassLoc, (x, maxClassIndex)) = cv2.minMaxLoc(classes_scores)
             # if maxScore >= 0.25:
-            if maxScore >= self.detection_threshold and self.classes[maxClassIndex] == "person":
+            if maxScore >= self.detection_threshold:
                 box = [
                     outputs[0][i][0] - (0.5 * outputs[0][i][2]),
                     outputs[0][i][1] - (0.5 * outputs[0][i][3]),
@@ -89,7 +83,7 @@ class FaceDetector(Config):
             y_plus_h = round((box[1] + box[3]) * scale)
             detection = {
                 "class_id": class_ids[index],
-                "class_name": self.classes[class_ids[index]],
+                "class_name": "person",
                 "confidence": scores[index],
                 "box": box,
                 "scale": scale,

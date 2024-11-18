@@ -15,21 +15,12 @@ import click
 from pipresence.config import Config
 
 @click.command()
-@click.option('--input-dir', default='data/test_images',type=str, help='Input directory for images')
-@click.option('--output-dir', type=str, help='Output directory for recognized faces')
-@click.option('--camera', is_flag=True, help='Use device camera for real-time recognition')
+@click.option('--infer', is_flag=True, help='Run inference on the camera feed or `input_path`')
+@click.option('--camera', is_flag=True, help='Use device camera for real-time recognition. If not given, inference on the `input_path` is automatically chosen.')
 @click.option('--encode', is_flag=True, help='Encode the preprocessed images in the given directory')
-@click.option('--encode-in', default='data/images/', type=str, help='Structured images directory in the data/image/[person\'s name]/[left/front/right.jpg/png] format')
-@click.option('--encode-out', default='data/encodings/face_encodings.pkl', type=str, help="Encoding output file path")
-def main(input_dir, output_dir, camera, encode, encode_in, encode_out):
-    config = Config()
-    if input_dir:
-        config.set_config(input_directory=input_dir)
-    if output_dir:
-        config.set_config(output_directory=output_dir)
-    else:
-        config.set_config(output_directory=config.input_directory)
-
+@click.option('--input-dir', default='data/images',type=str, help='Input directory for images that have the structured raw face images.')
+@click.option('--output-dir', default='data/known_faces', type=str, help='Output directory to save the detected faces')
+def main(infer, camera, encode, input_dir, output_dir,):
     # Initialize face detection and recognition models
     print("[INFO] Initializing models for face detection and recognition")
     detector = FaceDetector()

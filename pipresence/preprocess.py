@@ -2,57 +2,90 @@
 
 # pipresence/preprocess.py
 import cv2
-import numpy as np
 import os
-import pickle
 from pipresence.config import Config
+from pipresence.detect_faces import FaceDetector
 
 class ImagePreprocessor(Config):
     def __init__(self, input_directory=None, output_directory=None):
         super().__init__()
-        self.input_directory = input_directory or "data/images"
-        self.output_directory = output_directory or "data/known_faces"
+        self.input_directory = input_directory
+        self.output_directory = output_directory
+        self.detector = FaceDetector()
 
-
-    def preprocess_known_faces(self):
-        # Create output directory if it doesn't exist
-        if not os.path.exists(self.output_directory):
-            os.makedirs(self.output_directory)
+    def process_input_image(self, image_path):
+        """Process a single input image and return face detection if exactly one face is found"""
+        # Read image
+        image = cv2.imread(image_path)
+        if image is None:
+            print(f"[ERROR] Could not read image: {image_path}")
+            return None, None
         
-        # Iterate over each person's folder in the input directory
-        for person_name in os.listdir(self.input_directory):
-            person_path = os.path.join(self.input_directory, person_name)
-            if os.path.isdir(person_path):
-                print(f"[INFO] Preprocessing known faces for: {person_name}")
-                # Create output sub-directory for the person if it doesn't exist
-                person_output_path = os.path.join(self.output_directory, person_name)
-                if not os.path.exists(person_output_path):
-                    os.makedirs(person_output_path)
+        # Detect faces
+        detections = self.detector.detect_faces(image)
+        
+        # Check if exactly one face is detected
+        if len(detections) != 1:
+            print(f"[WARNING] Expected 1 face, found {len(detections)} in {image_path}")
+            return None, None
+        
+        # Get the single detection
+        detection = detections[0]
+        
+        # Extract face coordinates
+        x = round(detection["box"][0] * detection["scale"])
+        y = round(detection["box"][1] * detection["scale"])
+        x_plus_w = round((detection["box"][0] + detection["box"][2]) * detection["scale"])
+        y_plus_h = round((detection["box"][1] + detection["box"][3]) * detection["scale"])
+        
+        # Extract and return the face region
+        face_image = image[y:y_plus_h, x:x_plus_w]
+        return face_image, detection["confidence"]
+
+    def process_database_images(self, input_dir, output_dir):
+        """Process all images in the database structure"""
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        
+        processed_count = 0
+        error_count = 0
+        
+        # Iterate through person directories
+        for person_name in os.listdir(input_dir):
+            person_input_path = os.path.join(input_dir, person_name)
+            person_output_path = os.path.join(output_dir, person_name)
+            
+            if not os.path.isdir(person_input_path):
+                continue
                 
-                # Process each profile image: left, front, right
-                for profile in ['left', 'front', 'right']:
-                    image_path = os.path.join(person_path, f"{profile}.jpg")
-                    if os.path.exists(image_path):
-                        try:
-                            # Load image from the specified path
-                            print(f"[INFO] Loading image from {image_path}")
-                            image = cv2.imread(image_path)
-                            if image is None:
-                                raise ValueError(f"[ERROR] Unable to read image at {image_path}")
-                            
-                            # Resize image to a standard size
-                            print(f"[INFO] Resizing image to {self.image_size}")
-                            resized_image = cv2.resize(image, self.image_size)
-                            
-                            # Normalize the image values to [0, 1]
-                            print("[INFO] Normalizing image values to [0, 1]")
-                            normalized_image = resized_image.astype(np.float32) / 255.0
-                            
-                            # Save the processed image to the output directory
-                            output_image_path = os.path.join(person_output_path, f"{profile}.jpg")
-                            cv2.imwrite(output_image_path, normalized_image * 255)
-                            print(f"[INFO] Saved preprocessed image to {output_image_path}")
-                        except ValueError as e:
-                            print(e)
-                    else:
-                        print(f"[WARNING] Missing {profile}.jpg for {person_name}, skipping this profile.")
+            # Create output directory for this person
+            if not os.path.exists(person_output_path):
+                os.makedirs(person_output_path)
+            
+            # Process each pose (left, front, right)
+            for pose in ['left', 'front', 'right']:
+                input_image_path = os.path.join(person_input_path, f"{pose}.jpg")
+                output_image_path = os.path.join(person_output_path, f"{pose}.jpg")
+                
+                if not os.path.exists(input_image_path):
+                    print(f"[WARNING] Missing {pose} image for {person_name}")
+                    continue
+                    
+                print(f"[INFO] Processing {input_image_path}")
+                
+                # Process the image
+                face_image, confidence = self.process_input_image(input_image_path, detector)
+                
+                if face_image is not None:
+                    # Resize face image to model input size
+                    face_resized = cv2.resize(face_image, (112, 112))  # Standard size for most face recognition models
+                    
+                    # Save the processed face
+                    cv2.imwrite(output_image_path, face_resized)
+                    print(f"[INFO] Saved processed face to {output_image_path}")
+                    processed_count += 1
+                else:
+                    print(f"[ERROR] Failed to process {input_image_path}")
+                    error_count += 1
+        
+        return processed_count, error_count

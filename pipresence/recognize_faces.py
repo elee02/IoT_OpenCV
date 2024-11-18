@@ -7,38 +7,75 @@ import onnxruntime as ort
 import cv2
 
 class FaceRecognizer(Config):
-    def __init__(self, model_path: str):
+    def __init__(self, model_path=None):
         super().__init__()
         self.mobilefacenet_model_path = model_path or self.mobilefacenet_model_path
-        # Load MobileFaceNet ONNX model
         print(f"[INFO] Loading MobileFaceNet model from {self.mobilefacenet_model_path}")
         self.session = ort.InferenceSession(self.mobilefacenet_model_path)
-        # Get the input name for the ONNX model
         self.input_name = self.session.get_inputs()[0].name
 
     def preprocess(self, face_image):
-        # Resize the face image to the required input size for the model
-        print("[INFO] Preprocessing face image for recognition")
-        face_resized = cv2.resize(face_image, self.face_image_size)
-        # Normalize pixel values to range [0, 1]
-        face_resized = face_resized.astype(np.float32) / 255.0
-        # # Change image layout to channel-first format as required by ONNX model
-        # face_resized = np.transpose(face_resized, (2, 0, 1))  # Channel first
-        # Add batch dimension (needed by the model)
-        face_resized = np.expand_dims(face_resized, axis=0)
-        return face_resized
+        """Preprocess face image for the MobileFaceNet model"""
+        if face_image is None:
+            raise ValueError("Input face image is None")
+            
+        # Ensure image is BGR (OpenCV default)
+        if len(face_image.shape) == 2:  # Grayscale
+            face_image = cv2.cvtColor(face_image, cv2.COLOR_GRAY2BGR)
+            
+        # # Resize to model's required size
+        # face_resized = cv2.resize(face_image, self.face_image_size)
+        
+        # Convert BGR to RGB
+        face_rgb = cv2.cvtColor(face_image, cv2.COLOR_BGR2RGB)
+        
+        # Normalize to [-1, 1] range (MobileFaceNet requirement)
+        face_normalized = (face_rgb.astype(np.float32) - 127.5) / 128.0
+        
+        # Transpose to NCHW format (batch, channels, height, width)
+        face_transposed = np.transpose(face_normalized, (2, 0, 1))
+        
+        # Add batch dimension
+        face_batch = np.expand_dims(face_transposed, axis=0)
+        
+        return face_batch
 
     def recognize_face(self, image):
-        # Preprocess and run inference to generate face embedding
-        print("[INFO] Generating face embedding")
-        preprocessed_face = self.preprocess(image)
-        # Run inference to get the embedding
-        embedding = self.session.run(None, {self.input_name: preprocessed_face})[0]
-        return embedding.flatten()
+        """Generate face embedding from image"""
+        try:
+            # Preprocess the face image
+            preprocessed_face = self.preprocess(image)
+            
+            # Run inference
+            embedding = self.session.run(None, {self.input_name: preprocessed_face})[0]
+            
+            # Post-process the embedding
+            # Flatten and normalize the embedding vector
+            embedding_flat = embedding.flatten()
+            embedding_normalized = embedding_flat / np.linalg.norm(embedding_flat)
+            
+            return embedding_normalized
+            
+        except Exception as e:
+            print(f"[ERROR] Face recognition failed: {str(e)}")
+            return None
 
-    def compare_embeddings(self, embedding1, embedding2, threshold=0.6):
-        # Calculate similarity between two embeddings using cosine similarity
-        cosine_similarity = np.dot(embedding1, embedding2) / (np.linalg.norm(embedding1) * np.linalg.norm(embedding2))
-        print(f"[DEBUG] Cosine similarity: {cosine_similarity}")
-        # If similarity exceeds the threshold, return True (match found)
-        return cosine_similarity > threshold
+    def compare_embeddings(self, embedding1, embedding2):
+        """Compare two face embeddings using cosine similarity"""
+        if embedding1 is None or embedding2 is None:
+            return False
+            
+        try:
+            # Ensure embeddings are normalized
+            embedding1_normalized = embedding1 / np.linalg.norm(embedding1)
+            embedding2_normalized = embedding2 / np.linalg.norm(embedding2)
+            
+            # Calculate cosine similarity
+            similarity = np.dot(embedding1_normalized, embedding2_normalized)
+            
+            print(f"[DEBUG] Similarity score: {similarity:.3f}")
+            return similarity > self.recognition_threshold
+            
+        except Exception as e:
+            print(f"[ERROR] Embedding comparison failed: {str(e)}")
+            return False
