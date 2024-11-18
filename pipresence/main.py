@@ -27,10 +27,7 @@ def main(infer, camera, encode, input_dir, output_dir,):
     recognizer = FaceRecognizer()
 
     if encode:
-        encode_faces(
-            config=config, 
-            recognizer=recognizer
-        )
+        
 
     if os.path.exists(config.embeddings_file):
         # Load existing embeddings from the file
@@ -96,9 +93,8 @@ def main(infer, camera, encode, input_dir, output_dir,):
         # Preprocess known faces
         print("[INFO] Starting preprocessing of known faces")
         preprocessor = ImagePreprocessor()
-        preprocessor.preprocess_known_faces(config.input_directory, preprocessor.output_directory)
+        preprocessor.preprocess_known_faces(x``.input_directory, preprocessor.output_directory)
 
-        
 
 if __name__ == '__main__':
     main()

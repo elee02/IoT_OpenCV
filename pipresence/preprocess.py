@@ -9,8 +9,8 @@ from pipresence.detect_faces import FaceDetector
 class ImagePreprocessor(Config):
     def __init__(self, input_directory=None, output_directory=None):
         super().__init__()
-        self.input_directory = input_directory
-        self.output_directory = output_directory
+        self.input_directory = input_directory or self.input_directory
+        self.output_directory = output_directory or self.output_directory
         self.detector = FaceDetector()
 
     def process_input_image(self, image_path):
@@ -77,11 +77,11 @@ class ImagePreprocessor(Config):
                 face_image, confidence = self.process_input_image(input_image_path, detector)
                 
                 if face_image is not None:
-                    # Resize face image to model input size
-                    face_resized = cv2.resize(face_image, (112, 112))  # Standard size for most face recognition models
+                    # # Resize face image to model input size
+                    # face_resized = cv2.resize(face_image, (112, 112))  # Standard size for most face recognition models
                     
                     # Save the processed face
-                    cv2.imwrite(output_image_path, face_resized)
+                    cv2.imwrite(output_image_path, face_image)
                     print(f"[INFO] Saved processed face to {output_image_path}")
                     processed_count += 1
                 else:

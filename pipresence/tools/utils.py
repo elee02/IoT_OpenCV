@@ -3,6 +3,7 @@ import os
 import pickle
 import numpy as np
 
+
 def draw_bounding_box(img, label, color, confidence, x, y, x_plus_w, y_plus_h):
     """
     Draws bounding boxes on the input image based on the provided arguments.
@@ -51,3 +52,4 @@ def encode_faces(config, recognizer):
     with open(config.embeddings_file, 'wb') as f:
         pickle.dump(database, f)
     print(f"[INFO] Saved known face embeddings to {config.embeddings_file}")
+    

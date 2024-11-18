@@ -18,13 +18,13 @@ class FaceRecognizer(Config):
         """Preprocess face image for the MobileFaceNet model"""
         if face_image is None:
             raise ValueError("Input face image is None")
-            
+        
         # Ensure image is BGR (OpenCV default)
         if len(face_image.shape) == 2:  # Grayscale
             face_image = cv2.cvtColor(face_image, cv2.COLOR_GRAY2BGR)
-            
-        # # Resize to model's required size
-        # face_resized = cv2.resize(face_image, self.face_image_size)
+
+        # Resize to model's required size
+        face_resized = cv2.resize(face_image, self.face_image_size)
         
         # Convert BGR to RGB
         face_rgb = cv2.cvtColor(face_image, cv2.COLOR_BGR2RGB)
@@ -64,7 +64,7 @@ class FaceRecognizer(Config):
         """Compare two face embeddings using cosine similarity"""
         if embedding1 is None or embedding2 is None:
             return False
-            
+        
         try:
             # Ensure embeddings are normalized
             embedding1_normalized = embedding1 / np.linalg.norm(embedding1)

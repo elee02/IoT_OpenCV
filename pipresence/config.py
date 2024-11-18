@@ -1,14 +1,14 @@
 class Config:
     # Paths to models
     yolo_model_path = 'data/models/yolov8n.onnx'
-    mobilefacenet_model_path = 'data/models/mobilefacenet.onnx'
+    mobilefacenet_model_path = 'data/models/mobilefacenet_fixed.onnx'
     
     # Directories for input and output
     input_directory = 'data/images'
     output_directory = 'data/known_faces'
     
     # Detection and recognition thresholds
-    detection_threshold = 0.4
+    detection_threshold = 0.25
     recognition_threshold = 0.6
     
     # Image preprocessing configurations
