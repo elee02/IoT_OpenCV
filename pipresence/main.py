@@ -6,7 +6,8 @@ from pipresence.detect_faces import FaceDetector
 from pipresence.recognize_faces import FaceRecognizer
 from pipresence.preprocess import ImagePreprocessor
 from pipresence.tools.utils import (
-    encode_faces
+    contains_one_person,
+    extract_face
 )
 import numpy as np
 import os
@@ -21,80 +22,82 @@ from pipresence.config import Config
 @click.option('--input-dir', default='data/images',type=str, help='Input directory for images that have the structured raw face images.')
 @click.option('--output-dir', default='data/known_faces', type=str, help='Output directory to save the detected faces')
 def main(infer, camera, encode, input_dir, output_dir,):
+    Config.update_config(
+            input_directory = input_dir,
+            output_directory = output_dir
+        )
     # Initialize face detection and recognition models
     print("[INFO] Initializing models for face detection and recognition")
     detector = FaceDetector()
     recognizer = FaceRecognizer()
 
     if encode:
-        
-
-    if os.path.exists(config.embeddings_file):
-        # Load existing embeddings from the file
-        print(f"[INFO] Loading known face embeddings from {config.embeddings_file}")
-        with open(config.embeddings_file, 'rb') as f:
-            database = pickle.load(f)
-    else:
-        raise Exception("[ERROR] No embeddings found")
-    
-    if camera:
-        # Start the camera feed to detect and recognize faces
-        print("[INFO] Starting camera feed for face detection and recognition")
-        cap = cv2.VideoCapture(0)
-
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                print("[ERROR] Failed to capture frame from camera, exiting loop")
-                break
-
-            # Detect faces in the current frame
-            print("[INFO] Detecting faces in the current frame")
-            detections = detector.detect_faces(frame)
-            
-            for detection in detections:
-                x = round(detection["box"][0] * detection["scale"])
-                y = round(detection["box"][1] * detection["scale"])
-                x_plus_w = round((detection["box"][0] + detection["box"][2]) * detection["scale"])
-                y_plus_h = round((detection["box"][1] + detection["box"][3]) * detection["scale"])
-                detected_face = frame[y: y_plus_h, x: x_plus_w]
-                # Recognize detected face
-                print("[INFO] Recognizing detected face")
-                embedding = recognizer.recognize_face(detected_face)
-                recognized = False
-
-                # Compare detected face with known faces in the database
-                for name, known_embedding in database.items():
-                    if recognizer.compare_embeddings(embedding, known_embedding):
-                        print(f"[INFO] Recognized {name}")
-                        # Annotate the recognized face in the video feed
-                        cv2.putText(frame, f"{name}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                        recognized = True
-                        break
-
-                if not recognized:
-                    print("[INFO] Face not recognized, marking as Unknown")
-                    # Annotate the unrecognized face in the video feed
-                    cv2.putText(frame, "Unknown", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-
-            # Display the video feed with annotations
-            cv2.imshow('PiPresence - Attendance Recognition', frame)
-
-            # Exit loop if 'q' is pressed
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                print("[INFO] 'q' pressed, exiting the application")
-                break
-
-        # Release the camera and close all windows
-        cap.release()
-        cv2.destroyAllWindows()
-        print("[INFO] Camera feed closed, application terminated")
-    else:
-        # Preprocess known faces
-        print("[INFO] Starting preprocessing of known faces")
         preprocessor = ImagePreprocessor()
-        preprocessor.preprocess_known_faces(x``.input_directory, preprocessor.output_directory)
+        success, fail = preprocessor.process_database_images()
+        print(f"[INFO] Total processed images: {success}")
+        print(f"[INFO] Total failed processes: {fail}")
+    if infer:
+        if os.path.exists(Config.embeddings_file):
+            # Load existing embeddings from the file
+            print(f"[INFO] Loading known face embeddings from {Config.embeddings_file}")
+            with open(Config.embeddings_file, 'rb') as f:
+                database = pickle.load(f)
+        else:
+            print(f"[ERROR] No embeddings found")
+            return -1
+        
+        if camera:
+            # Start the camera feed to detect and recognize faces
+            print("[INFO] Starting camera feed for face detection and recognition")
+            cap = cv2.VideoCapture(0)
 
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    print("[ERROR] Failed to capture frame from camera, exiting loop")
+                    break
+
+                # Detect faces in the current frame
+                print("[INFO] Detecting faces in the current frame")
+                detections = detector.detect_faces(frame)
+                
+                if not contains_one_person(detections):
+                    break
+
+                detected_face = extract_face(frame, detections)
+                recognizer.annotate_recognized(frame, detected_face, database)
+
+                # Display the video feed with annotations
+                cv2.imshow('PiPresence - Attendance Recognition', frame)
+
+                # Exit loop if 'q' is pressed
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    print("[INFO] 'q' pressed, exiting the application")
+                    break
+
+            # Release the camera and close all windows
+            cap.release()
+            cv2.destroyAllWindows()
+            print("[INFO] Camera feed closed, application terminated")
+        else:
+            images = os.listdir(Config.input_directory)
+            # Create output directory for recognized images
+            if not os.path.exists(Config.output_directory):
+                os.makedirs(Config.output_directory)
+
+            for image in images:
+                img = cv2.imread(os.path.join(Config.input_directory, image))
+                detections = detector.detect_faces(img)
+
+                if not contains_one_person(detections):
+                    break
+                
+                detected_face = extract_face(img, detections)
+                recognizer.annotate_recognized(img, detected_face, database)
+
+                # Save the recognized face
+                cv2.imwrite(os.path.join(Config.output_directory, image), img)
+                print(f"[INFO] Saved recognized face to {Config.output_directory}")
 
 if __name__ == '__main__':
     main()

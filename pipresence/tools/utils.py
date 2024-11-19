@@ -1,8 +1,4 @@
 import cv2
-import os
-import pickle
-import numpy as np
-
 
 def draw_bounding_box(img, label, color, confidence, x, y, x_plus_w, y_plus_h):
     """
@@ -22,34 +18,26 @@ def draw_bounding_box(img, label, color, confidence, x, y, x_plus_w, y_plus_h):
     cv2.rectangle(img, (x, y), (x_plus_w, y_plus_h), color, 2)
     cv2.putText(img, label, (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-def encode_faces(config, recognizer):
-    # Load or create the known face embeddings database
-    database = {}
-    # Generate embeddings for known faces
-    print("[INFO] Generating known face embeddings")
-    database_path = config.output_directory
-    for person_name in os.listdir(database_path):
-        person_path = os.path.join(database_path, person_name)
-        if os.path.isdir(person_path):
-            embeddings = []
-            # Process each profile image: left, front, right
-            for profile in ['left', 'front', 'right']:
-                image_path = os.path.join(person_path, f"{profile}.jpg")
-                if os.path.exists(image_path):
-                    known_image = cv2.imread(image_path)
-                    if known_image is None:
-                        print(f"[WARNING] Could not read image {image_path}, skipping.")
-                        continue
-                    # Generate embedding for the known face
-                    embedding = recognizer.recognize_face(known_image)
-                    embeddings.append(embedding)
-            if embeddings:
-                # Average the embeddings from different profiles to get a more robust representation
-                average_embedding = np.mean(embeddings, axis=0)
-                database[person_name] = average_embedding
-                print(f"[INFO] Added {person_name} to the known faces database")
-    # Save embeddings to a file for future use
-    with open(config.embeddings_file, 'wb') as f:
-        pickle.dump(database, f)
-    print(f"[INFO] Saved known face embeddings to {config.embeddings_file}")
-    
+
+def contains_one_person(detections: list[dict]) -> bool:
+    # Check if any faces were detected
+    if len(detections) == 0:
+        print(f"[WARNING] No faces found from the camera feed")
+        return False
+    # If multiple faces found, select the one with highest confidence
+    elif len(detections) > 1:
+        print(f"[INFO] Multiple faces ({len(detections)}) found in the camera feed, selecting highest confidence detection")
+        # Sort detections by confidence and take the highest
+        detection = max(detections, key=lambda x: x["confidence"])
+        print(f"[INFO] Selected face with confidence: {detection['confidence']:.3f}")
+    return True
+
+
+def extract_face(image, detections):
+    detection = detections[0]
+    x = round(detection["box"][0] * detection["scale"])
+    y = round(detection["box"][1] * detection["scale"])
+    x_plus_w = round((detection["box"][0] + detection["box"][2]) * detection["scale"])
+    y_plus_h = round((detection["box"][1] + detection["box"][3]) * detection["scale"])
+    detected_face = image[y: y_plus_h, x: x_plus_w]
+    return detected_face

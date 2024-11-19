@@ -3,8 +3,11 @@
 # pipresence/preprocess.py
 import cv2
 import os
+import numpy as np
+import pickle
 from pipresence.config import Config
 from pipresence.detect_faces import FaceDetector
+from pipresence.recognize_faces import FaceRecognizer
 
 class ImagePreprocessor(Config):
     def __init__(self, input_directory=None, output_directory=None):
@@ -12,6 +15,7 @@ class ImagePreprocessor(Config):
         self.input_directory = input_directory or self.input_directory
         self.output_directory = output_directory or self.output_directory
         self.detector = FaceDetector()
+        self.recognizer = FaceRecognizer()
 
     def process_input_image(self, image_path):
         """Process a single input image and return face detection if exactly one face is found"""
@@ -20,17 +24,24 @@ class ImagePreprocessor(Config):
         if image is None:
             print(f"[ERROR] Could not read image: {image_path}")
             return None, None
-        
+        elif len(image[0]) < 640 or len(image[1]) < 640:
+            print(f"[ERROR] At least one dimension is smaller than 640")
+            return None, None
         # Detect faces
         detections = self.detector.detect_faces(image)
         
-        # Check if exactly one face is detected
-        if len(detections) != 1:
-            print(f"[WARNING] Expected 1 face, found {len(detections)} in {image_path}")
+        # Check if any faces were detected
+        if len(detections) == 0:
+            print(f"[WARNING] No faces found in {image_path}")
             return None, None
-        
-        # Get the single detection
-        detection = detections[0]
+        # If multiple faces found, select the one with highest confidence
+        elif len(detections) > 1:
+            print(f"[INFO] Multiple faces ({len(detections)}) found in {image_path}, selecting highest confidence detection")
+            # Sort detections by confidence and take the highest
+            detection = max(detections, key=lambda x: x["confidence"])
+            print(f"[INFO] Selected face with confidence: {detection['confidence']:.3f}")
+        else:
+            detection = detections[0]
         
         # Extract face coordinates
         x = round(detection["box"][0] * detection["scale"])
@@ -42,22 +53,27 @@ class ImagePreprocessor(Config):
         face_image = image[y:y_plus_h, x:x_plus_w]
         return face_image, detection["confidence"]
 
-    def process_database_images(self, input_dir, output_dir):
+    def process_database_images(self, input_dir=None, output_dir=None, embeddings_dir=None):
+        self.input_directory = input_dir or self.input_directory
+        self.output_directory = output_dir or self.output_directory
+        self.embeddings_file = embeddings_dir or self.embeddings_file
         """Process all images in the database structure"""
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+        if not os.path.exists(self.output_directory):
+            os.makedirs(self.output_directory)
         
         processed_count = 0
         error_count = 0
+        database = {}
         
         # Iterate through person directories
-        for person_name in os.listdir(input_dir):
-            person_input_path = os.path.join(input_dir, person_name)
-            person_output_path = os.path.join(output_dir, person_name)
-            
+        for person_name in os.listdir(self.input_directory):
+            person_input_path = os.path.join(self.input_directory, person_name)
+            person_output_path = os.path.join(self.output_directory, person_name)
+            embeddings = []
+
             if not os.path.isdir(person_input_path):
                 continue
-                
+            
             # Create output directory for this person
             if not os.path.exists(person_output_path):
                 os.makedirs(person_output_path)
@@ -74,18 +90,27 @@ class ImagePreprocessor(Config):
                 print(f"[INFO] Processing {input_image_path}")
                 
                 # Process the image
-                face_image, confidence = self.process_input_image(input_image_path, detector)
+                face_image, confidence = self.process_input_image(input_image_path)
                 
                 if face_image is not None:
-                    # # Resize face image to model input size
-                    # face_resized = cv2.resize(face_image, (112, 112))  # Standard size for most face recognition models
-                    
+                    # Resize face image to model input size
+                    face_resized = cv2.resize(face_image, (112, 112))  # Standard size for most face recognition models
+                    embedding = self.recognizer.recognize_face(face_image)
+                    embeddings.append(embedding)
                     # Save the processed face
-                    cv2.imwrite(output_image_path, face_image)
+                    cv2.imwrite(output_image_path, face_resized)
                     print(f"[INFO] Saved processed face to {output_image_path}")
                     processed_count += 1
                 else:
                     print(f"[ERROR] Failed to process {input_image_path}")
                     error_count += 1
-        
+            if embeddings:
+                # Average the embeddings from different profiles to get a more robust representation
+                average_embedding = np.mean(embeddings, axis=0)
+                database[person_name] = average_embedding
+                print(f"[INFO] Added {person_name} to the known faces database")
+        # Save embeddings to a file for future use
+        with open(self.embeddings_file, 'wb') as f:
+            pickle.dump(database, f)
+            print(f"[INFO] Saved known face embeddings to {self.embeddings_file}")
         return processed_count, error_count

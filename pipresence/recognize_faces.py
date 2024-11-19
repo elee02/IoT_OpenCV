@@ -79,3 +79,22 @@ class FaceRecognizer(Config):
         except Exception as e:
             print(f"[ERROR] Embedding comparison failed: {str(e)}")
             return False
+    
+    def annotate_recognized(self, image, detected_face, database):
+        # Recognize detected face
+        print("[INFO] Recognizing detected face")
+        embedding = self.recognize_face(detected_face)
+        recognized = False
+        # Compare detected face with known faces in the database
+        for name, known_embedding in database.items():
+            if self.compare_embeddings(embedding, known_embedding):
+                print(f"[INFO] Recognized {name}")
+                # Annotate the recognized face in the video feed
+                cv2.putText(image, f"{name}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                recognized = True
+                break
+
+        if not recognized:
+            print("[INFO] Face not recognized, marking as Unknown")
+            # Annotate the unrecognized face in the image
+            cv2.putText(image, "Unknown", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
