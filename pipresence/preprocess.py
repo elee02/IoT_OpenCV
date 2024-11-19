@@ -6,6 +6,10 @@ import os
 import numpy as np
 import pickle
 from pipresence.config import Config
+from pipresence.tools.utils import (
+    contains_one_person,
+    extract_face
+)
 from pipresence.detect_faces import FaceDetector
 from pipresence.recognize_faces import FaceRecognizer
 
@@ -30,33 +34,12 @@ class ImagePreprocessor(Config):
         # Detect faces
         detections = self.detector.detect_faces(image)
         
-        # Check if any faces were detected
-        if len(detections) == 0:
-            print(f"[WARNING] No faces found in {image_path}")
-            return None, None
-        # If multiple faces found, select the one with highest confidence
-        elif len(detections) > 1:
-            print(f"[INFO] Multiple faces ({len(detections)}) found in {image_path}, selecting highest confidence detection")
-            # Sort detections by confidence and take the highest
-            detection = max(detections, key=lambda x: x["confidence"])
-            print(f"[INFO] Selected face with confidence: {detection['confidence']:.3f}")
-        else:
-            detection = detections[0]
-        
-        # Extract face coordinates
-        x = round(detection["box"][0] * detection["scale"])
-        y = round(detection["box"][1] * detection["scale"])
-        x_plus_w = round((detection["box"][0] + detection["box"][2]) * detection["scale"])
-        y_plus_h = round((detection["box"][1] + detection["box"][3]) * detection["scale"])
-        
-        # Extract and return the face region
-        face_image = image[y:y_plus_h, x:x_plus_w]
-        return face_image, detection["confidence"]
+        if not contains_one_person(detections):
+            return -1
+        face_image = extract_face(image, detections)
+        return face_image
 
-    def process_database_images(self, input_dir=None, output_dir=None, embeddings_dir=None):
-        self.input_directory = input_dir or self.input_directory
-        self.output_directory = output_dir or self.output_directory
-        self.embeddings_file = embeddings_dir or self.embeddings_file
+    def process_database_images(self):
         """Process all images in the database structure"""
         if not os.path.exists(self.output_directory):
             os.makedirs(self.output_directory)
@@ -90,12 +73,12 @@ class ImagePreprocessor(Config):
                 print(f"[INFO] Processing {input_image_path}")
                 
                 # Process the image
-                face_image, confidence = self.process_input_image(input_image_path)
+                face_image = self.process_input_image(input_image_path)
                 
                 if face_image is not None:
                     # Resize face image to model input size
-                    face_resized = cv2.resize(face_image, (112, 112))  # Standard size for most face recognition models
-                    embedding = self.recognizer.recognize_face(face_image)
+                    face_resized = cv2.resize(face_image, self.face_image_size)  # Standard size for most face recognition models
+                    embedding = self.recognizer.recognize_face(face_resized)
                     embeddings.append(embedding)
                     # Save the processed face
                     cv2.imwrite(output_image_path, face_resized)

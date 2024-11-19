@@ -64,8 +64,7 @@ def main(infer, camera, encode, input_dir, output_dir,):
                 if not contains_one_person(detections):
                     break
 
-                detected_face = extract_face(frame, detections)
-                recognizer.annotate_recognized(frame, detected_face, database)
+                recognizer.annotate_recognized(frame, detections, database)
 
                 # Display the video feed with annotations
                 cv2.imshow('PiPresence - Attendance Recognition', frame)
@@ -92,8 +91,7 @@ def main(infer, camera, encode, input_dir, output_dir,):
                 if not contains_one_person(detections):
                     break
                 
-                detected_face = extract_face(img, detections)
-                recognizer.annotate_recognized(img, detected_face, database)
+                recognizer.annotate_recognized(img, detections, database)
 
                 # Save the recognized face
                 cv2.imwrite(os.path.join(Config.output_directory, image), img)

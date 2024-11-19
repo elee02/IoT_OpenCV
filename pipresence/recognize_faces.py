@@ -1,6 +1,7 @@
 # This script will handle face recognition using MobileFaceNet model.
 
 # pipresence/recognize_faces.py
+from pipresence.tools.utils import draw_bounding_box, extract_face
 from pipresence.config import Config
 import numpy as np
 import onnxruntime as ort
@@ -80,7 +81,13 @@ class FaceRecognizer(Config):
             print(f"[ERROR] Embedding comparison failed: {str(e)}")
             return False
     
-    def annotate_recognized(self, image, detected_face, database):
+    def annotate_recognized(self, image, detections, database):
+        detection = detections[0]
+        x = round(detection["box"][0] * detection["scale"])
+        y = round(detection["box"][1] * detection["scale"])
+        x_plus_w = round((detection["box"][0] + detection["box"][2]) * detection["scale"])
+        y_plus_h = round((detection["box"][1] + detection["box"][3]) * detection["scale"])
+        detected_face = image[y: y_plus_h, x: x_plus_w]
         # Recognize detected face
         print("[INFO] Recognizing detected face")
         embedding = self.recognize_face(detected_face)
@@ -90,7 +97,16 @@ class FaceRecognizer(Config):
             if self.compare_embeddings(embedding, known_embedding):
                 print(f"[INFO] Recognized {name}")
                 # Annotate the recognized face in the video feed
-                cv2.putText(image, f"{name}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                draw_bounding_box(
+                    img = image,
+                    label = f"{name}",
+                    color = (0, 255, 0),
+                    confidence = detection["confidence"],
+                    x = x,
+                    y = y,
+                    x_plus_w = x_plus_w,
+                    y_plus_h = y_plus_h
+                )
                 recognized = True
                 break
 

@@ -39,5 +39,4 @@ def extract_face(image, detections):
     y = round(detection["box"][1] * detection["scale"])
     x_plus_w = round((detection["box"][0] + detection["box"][2]) * detection["scale"])
     y_plus_h = round((detection["box"][1] + detection["box"][3]) * detection["scale"])
-    detected_face = image[y: y_plus_h, x: x_plus_w]
-    return detected_face
+    return image[y: y_plus_h, x: x_plus_w]
