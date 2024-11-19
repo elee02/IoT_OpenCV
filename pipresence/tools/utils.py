@@ -1,4 +1,6 @@
 import cv2
+import os
+import pickle
 from pipresence.config import Config
 
 
@@ -45,3 +47,14 @@ def extract_face(image, detections):
     x_plus_w = round((detection["box"][0] + detection["box"][2]) * detection["scale"])
     y_plus_h = round((detection["box"][1] + detection["box"][3]) * detection["scale"])
     return image[y: y_plus_h, x: x_plus_w]
+
+
+def load_database():
+    if os.path.exists(Config.embeddings_file):
+            # Load existing embeddings from the file
+            logger.info(f"Loading known face embeddings from {Config.embeddings_file}")
+            with open(Config.embeddings_file, 'rb') as f:
+                return pickle.load(f)
+    else:
+        logger.error(f"[ERROR] No embeddings found")
+        return -1

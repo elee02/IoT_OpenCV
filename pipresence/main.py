@@ -7,7 +7,7 @@ from pipresence.recognize_faces import FaceRecognizer
 from pipresence.preprocess import ImagePreprocessor
 from pipresence.tools.utils import (
     contains_one_person,
-    extract_face
+    load_database
 )
 import numpy as np
 import os
@@ -20,8 +20,8 @@ from pipresence.config import Config
 @click.option('--infer', is_flag=True, help='Run inference on the camera feed or `input_path`')
 @click.option('--camera', is_flag=True, help='Use device camera for real-time recognition. If not given, inference on the `input_path` is automatically chosen.')
 @click.option('--encode', is_flag=True, help='Encode the preprocessed images in the given directory')
-@click.option('--input-dir', default='data/images',type=str, help='Input directory for images that have the structured raw face images.')
-@click.option('--output-dir', default='data/known_faces', type=str, help='Output directory to save the detected faces')
+@click.option('--input-dir', default='data/images',type=dir, help='Input directory for images that have the structured raw face images.')
+@click.option('--output-dir', default='data/known_faces', type=dir, help='Output directory to save the detected faces')
 def main(verbose, infer, camera, encode, input_dir, output_dir,):
     if verbose:
         Config.set_verbose(True)
@@ -42,14 +42,7 @@ def main(verbose, infer, camera, encode, input_dir, output_dir,):
         logger.info(f"Total processed images: {success}")
         logger.info(f"Total failed processes: {fail}")
     if infer:
-        if os.path.exists(Config.embeddings_file):
-            # Load existing embeddings from the file
-            logger.info(f"Loading known face embeddings from {Config.embeddings_file}")
-            with open(Config.embeddings_file, 'rb') as f:
-                database = pickle.load(f)
-        else:
-            logger.error(f"[ERROR] No embeddings found")
-            return -1
+        database = load_database()
         
         if camera:
             # Start the camera feed to detect and recognize faces
@@ -101,6 +94,7 @@ def main(verbose, infer, camera, encode, input_dir, output_dir,):
                 # Save the recognized face
                 cv2.imwrite(os.path.join(Config.output_directory, image), img)
                 logger.info(f"Saved recognized face to {Config.output_directory}")
+    logger.critical(f"Please, provide the options!")
 
 if __name__ == '__main__':
     main()
