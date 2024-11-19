@@ -1,3 +1,5 @@
+import logging
+
 class Config:
     # Paths to models
     yolo_model_path = 'data/models/yolov8n-face.onnx'
@@ -18,8 +20,23 @@ class Config:
     # Path to embeddings file
     embeddings_file = 'data/encodings/face_embeddings.pkl'
     
-    # Other configurations
-    log_level = 'INFO'
+    # Logging
+    verbose = False
+    log_level = logging.DEBUG if verbose else logging.WARNING
+
+    # Setup logging
+    logger = logging.getLogger('pipresence')
+    logger.setLevel()
+    
+    # Create console handler with formatting
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG if verbose else logging.WARNING)
+    formatter = logging.Formatter('%(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    
+    # Add handler to logger if it doesn't already have handlers
+    if not logger.handlers:
+        logger.addHandler(ch)
 
     @classmethod
     def update_config(cls, **kwargs):
@@ -27,17 +44,25 @@ class Config:
             if hasattr(cls, key):
                 setattr(cls, key, value)
             else:
-                print(f"[WARNING] {key} is not a valid attribute of Config")
+                cls.logger.warning(f"{key} is not a valid attribute of Config")
     
     @classmethod
+    def set_verbose(cls, verbose):
+        """Update logging level based on verbose flag"""
+        level = logging.DEBUG if verbose else logging.WARNING
+        cls.logger.setLevel(level)
+        for handler in cls.logger.handlers:
+            handler.setLevel(level)
+
+    @classmethod
     def display_config(cls):
-        print(f"YOLO Model Path: {cls.yolo_model_path}")
-        print(f"MobileFaceNet Model Path: {cls.mobilefacenet_model_path}")
-        print(f"Input Directory: {cls.input_directory}")
-        print(f"Output Directory: {cls.output_directory}")
-        print(f"Detection Threshold: {cls.detection_threshold}")
-        print(f"Recognition Threshold: {cls.recognition_threshold}")
-        print(f"Image Size: {cls.image_size}")
-        print(f"Face Image Size: {cls.face_image_size}")
-        print(f"Log Level: {cls.log_level}")
-        print(f"Embeddings File: {cls.embeddings_file}")
+        cls.logger.info(f"YOLO Model Path: {cls.yolo_model_path}")
+        cls.logger.info(f"MobileFaceNet Model Path: {cls.mobilefacenet_model_path}")
+        cls.logger.info(f"Input Directory: {cls.input_directory}")
+        cls.logger.info(f"Output Directory: {cls.output_directory}")
+        cls.logger.info(f"Detection Threshold: {cls.detection_threshold}")
+        cls.logger.info(f"Recognition Threshold: {cls.recognition_threshold}")
+        cls.logger.info(f"Image Size: {cls.image_size}")
+        cls.logger.info(f"Face Image Size: {cls.face_image_size}")
+        cls.logger.info(f"Log Level: {cls.log_level}")
+        cls.logger.info(f"Embeddings File: {cls.embeddings_file}")

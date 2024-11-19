@@ -16,49 +16,53 @@ import click
 from pipresence.config import Config
 
 @click.command()
+@click.option('--verbose', '-v', is_flag=True, default=False, help='Enable verbose output')
 @click.option('--infer', is_flag=True, help='Run inference on the camera feed or `input_path`')
 @click.option('--camera', is_flag=True, help='Use device camera for real-time recognition. If not given, inference on the `input_path` is automatically chosen.')
 @click.option('--encode', is_flag=True, help='Encode the preprocessed images in the given directory')
 @click.option('--input-dir', default='data/images',type=str, help='Input directory for images that have the structured raw face images.')
 @click.option('--output-dir', default='data/known_faces', type=str, help='Output directory to save the detected faces')
-def main(infer, camera, encode, input_dir, output_dir,):
+def main(verbose, infer, camera, encode, input_dir, output_dir,):
     Config.update_config(
+            verbose = verbose,
             input_directory = input_dir,
             output_directory = output_dir
         )
+    Config.display_config()
+    logger = Config.logger
     # Initialize face detection and recognition models
-    print("[INFO] Initializing models for face detection and recognition")
+    logger.info("Initializing models for face detection and recognition")
     detector = FaceDetector()
     recognizer = FaceRecognizer()
 
     if encode:
         preprocessor = ImagePreprocessor()
         success, fail = preprocessor.process_database_images()
-        print(f"[INFO] Total processed images: {success}")
-        print(f"[INFO] Total failed processes: {fail}")
+        logger.info(f"Total processed images: {success}")
+        logger.info(f"Total failed processes: {fail}")
     if infer:
         if os.path.exists(Config.embeddings_file):
             # Load existing embeddings from the file
-            print(f"[INFO] Loading known face embeddings from {Config.embeddings_file}")
+            logger.info(f"Loading known face embeddings from {Config.embeddings_file}")
             with open(Config.embeddings_file, 'rb') as f:
                 database = pickle.load(f)
         else:
-            print(f"[ERROR] No embeddings found")
+            logger.error(f"[ERROR] No embeddings found")
             return -1
         
         if camera:
             # Start the camera feed to detect and recognize faces
-            print("[INFO] Starting camera feed for face detection and recognition")
+            logger.info("Starting camera feed for face detection and recognition")
             cap = cv2.VideoCapture(0)
 
             while True:
                 ret, frame = cap.read()
                 if not ret:
-                    print("[ERROR] Failed to capture frame from camera, exiting loop")
+                    logger.error("Failed to capture frame from camera, exiting loop")
                     break
 
                 # Detect faces in the current frame
-                print("[INFO] Detecting faces in the current frame")
+                logger.info("Detecting faces in the current frame")
                 detections = detector.detect_faces(frame)
                 
                 if not contains_one_person(detections):
@@ -71,13 +75,13 @@ def main(infer, camera, encode, input_dir, output_dir,):
 
                 # Exit loop if 'q' is pressed
                 if cv2.waitKey(1) & 0xFF == ord('q'):
-                    print("[INFO] 'q' pressed, exiting the application")
+                    logger.info("'q' pressed, exiting the application")
                     break
 
             # Release the camera and close all windows
             cap.release()
             cv2.destroyAllWindows()
-            print("[INFO] Camera feed closed, application terminated")
+            logger.info("Camera feed closed, application terminated")
         else:
             images = os.listdir(Config.input_directory)
             # Create output directory for recognized images
@@ -95,7 +99,7 @@ def main(infer, camera, encode, input_dir, output_dir,):
 
                 # Save the recognized face
                 cv2.imwrite(os.path.join(Config.output_directory, image), img)
-                print(f"[INFO] Saved recognized face to {Config.output_directory}")
+                logger.info(f"Saved recognized face to {Config.output_directory}")
 
 if __name__ == '__main__':
     main()

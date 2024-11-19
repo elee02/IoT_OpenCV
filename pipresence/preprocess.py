@@ -26,10 +26,10 @@ class ImagePreprocessor(Config):
         # Read image
         image = cv2.imread(image_path)
         if image is None:
-            print(f"[ERROR] Could not read image: {image_path}")
+            self.logger.error(f"Could not read image: {image_path}")
             return None
         elif len(image[0]) < 640 or len(image[1]) < 640:
-            print(f"[ERROR] At least one dimension is smaller than 640")
+            self.logger.error(f"At least one dimension is smaller than 640")
             return None
         # Detect faces
         detections = self.detector.detect_faces(image)
@@ -67,10 +67,10 @@ class ImagePreprocessor(Config):
                 output_image_path = os.path.join(person_output_path, f"{pose}.jpg")
                 
                 if not os.path.exists(input_image_path):
-                    print(f"[WARNING] Missing {pose} image for {person_name}")
+                    self.logger.warning(f"Missing {pose} image for {person_name}")
                     continue
                     
-                print(f"[INFO] Processing {input_image_path}")
+                self.logger.info(f"Processing {input_image_path}")
                 
                 # Process the image
                 face_image = self.process_input_image(input_image_path)
@@ -80,18 +80,18 @@ class ImagePreprocessor(Config):
                     embeddings.append(embedding)
                     # Save the processed face
                     cv2.imwrite(output_image_path, face_image)
-                    print(f"[INFO] Saved processed face to {output_image_path}")
+                    self.logger.info(f"Saved processed face to {output_image_path}")
                     processed_count += 1
                 else:
-                    print(f"[ERROR] Failed to process {input_image_path}")
+                    self.logger.error(f"Failed to process {input_image_path}")
                     error_count += 1
             if embeddings:
                 # Average the embeddings from different profiles to get a more robust representation
                 average_embedding = np.mean(embeddings, axis=0)
                 database[person_name] = average_embedding
-                print(f"[INFO] Added {person_name} to the known faces database")
+                self.logger.info(f"Added {person_name} to the known faces database")
         # Save embeddings to a file for future use
         with open(self.embeddings_file, 'wb') as f:
             pickle.dump(database, f)
-            print(f"[INFO] Saved known face embeddings to {self.embeddings_file}")
+            self.logger.info(f"Saved known face embeddings to {self.embeddings_file}")
         return processed_count, error_count

@@ -11,7 +11,7 @@ class FaceRecognizer(Config):
     def __init__(self, model_path=None):
         super().__init__()
         self.mobilefacenet_model_path = model_path or self.mobilefacenet_model_path
-        print(f"[INFO] Loading MobileFaceNet model from {self.mobilefacenet_model_path}")
+        self.logger.info(f"Loading MobileFaceNet model from {self.mobilefacenet_model_path}")
         self.session = ort.InferenceSession(self.mobilefacenet_model_path)
         self.input_name = self.session.get_inputs()[0].name
 
@@ -58,13 +58,13 @@ class FaceRecognizer(Config):
             return embedding_normalized
             
         except Exception as e:
-            print(f"[ERROR] Face recognition failed: {str(e)}")
+            self.logger.error(f"Face recognition failed: {str(e)}")
             return None
 
     def compare_embeddings(self, embedding1, embedding2):
         """Compare two face embeddings using cosine similarity"""
         if embedding1 is None or embedding2 is None:
-            return False
+            return False, 0
         
         try:
             # Ensure embeddings are normalized
@@ -74,12 +74,12 @@ class FaceRecognizer(Config):
             # Calculate cosine similarity
             similarity = np.dot(embedding1_normalized, embedding2_normalized)
             
-            print(f"[DEBUG] Similarity score: {similarity:.3f}")
-            return similarity > self.recognition_threshold
+            self.logger.debug(f"Similarity score: {similarity:.3f}")
+            return similarity > self.recognition_threshold, similarity
             
         except Exception as e:
-            print(f"[ERROR] Embedding comparison failed: {str(e)}")
-            return False
+            self.logger.error(f"Embedding comparison failed: {str(e)}")
+            return False, 0
     
     def annotate_recognized(self, image, detections, database):
         detection = detections[0]
@@ -89,19 +89,20 @@ class FaceRecognizer(Config):
         y_plus_h = round((detection["box"][1] + detection["box"][3]) * detection["scale"])
         detected_face = image[y: y_plus_h, x: x_plus_w]
         # Recognize detected face
-        print("[INFO] Recognizing detected face")
+        self.logger.info("Recognizing detected face")
         embedding = self.recognize_face(detected_face)
         recognized = False
         # Compare detected face with known faces in the database
         for name, known_embedding in database.items():
-            if self.compare_embeddings(embedding, known_embedding):
-                print(f"[INFO] Recognized {name}")
+            matches, similarity = self.compare_embeddings(embedding, known_embedding)
+            if matches:
+                self.logger.info(f"Recognized {name}")
                 # Annotate the recognized face in the video feed
                 draw_bounding_box(
                     img = image,
                     label = f"{name}",
                     color = (0, 255, 0),
-                    confidence = detection["confidence"],
+                    confidence = similarity,
                     x = x,
                     y = y,
                     x_plus_w = x_plus_w,
@@ -111,13 +112,13 @@ class FaceRecognizer(Config):
                 break
 
         if not recognized:
-            print("[INFO] Face not recognized, marking as Unknown")
+            self.logger.info("Face not recognized, marking as Unknown")
             # Annotate the unrecognized face in the image
             draw_bounding_box(
                     img = image,
                     label = f"Unknown",
                     color = (0, 255, 0),
-                    confidence = detection["confidence"],
+                    confidence = 0.,
                     x = x,
                     y = y,
                     x_plus_w = x_plus_w,
