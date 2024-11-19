@@ -28,16 +28,16 @@ class FaceRecognizer(Config):
         face_resized = cv2.resize(face_image, self.face_image_size)
         
         # Convert BGR to RGB
-        face_rgb = cv2.cvtColor(face_image, cv2.COLOR_BGR2RGB)
+        face_rgb = cv2.cvtColor(face_resized, cv2.COLOR_BGR2RGB)
         
         # Normalize to [-1, 1] range (MobileFaceNet requirement)
         face_normalized = (face_rgb.astype(np.float32) - 127.5) / 128.0
         
-        # Transpose to NCHW format (batch, channels, height, width)
-        face_transposed = np.transpose(face_normalized, (2, 0, 1))
+        # # Transpose to NCHW format (batch, channels, height, width)
+        # face_transposed = np.transpose(face_normalized, (2, 0, 1))
         
         # Add batch dimension
-        face_batch = np.expand_dims(face_transposed, axis=0)
+        face_batch = np.expand_dims(face_normalized, axis=0)
         
         return face_batch
 

@@ -9,7 +9,7 @@ class Config:
     
     # Detection and recognition thresholds
     detection_threshold = 0.25
-    recognition_threshold = 0.4
+    recognition_threshold = 0.45
     
     # Image preprocessing configurations
     image_size = (640, 640)

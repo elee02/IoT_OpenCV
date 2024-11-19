@@ -27,15 +27,15 @@ class ImagePreprocessor(Config):
         image = cv2.imread(image_path)
         if image is None:
             print(f"[ERROR] Could not read image: {image_path}")
-            return None, None
+            return None
         elif len(image[0]) < 640 or len(image[1]) < 640:
             print(f"[ERROR] At least one dimension is smaller than 640")
-            return None, None
+            return None
         # Detect faces
         detections = self.detector.detect_faces(image)
         
         if not contains_one_person(detections):
-            return -1
+            return None
         face_image = extract_face(image, detections)
         return face_image
 
@@ -76,12 +76,10 @@ class ImagePreprocessor(Config):
                 face_image = self.process_input_image(input_image_path)
                 
                 if face_image is not None:
-                    # Resize face image to model input size
-                    face_resized = cv2.resize(face_image, self.face_image_size)  # Standard size for most face recognition models
-                    embedding = self.recognizer.recognize_face(face_resized)
+                    embedding = self.recognizer.recognize_face(face_image)
                     embeddings.append(embedding)
                     # Save the processed face
-                    cv2.imwrite(output_image_path, face_resized)
+                    cv2.imwrite(output_image_path, face_image)
                     print(f"[INFO] Saved processed face to {output_image_path}")
                     processed_count += 1
                 else:
