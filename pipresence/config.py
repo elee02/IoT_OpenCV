@@ -48,6 +48,7 @@ class Config:
     
     @classmethod
     def set_verbose(cls, verbose):
+        cls.verbose = True
         """Update logging level based on verbose flag"""
         level = logging.DEBUG if verbose else logging.WARNING
         cls.logger.setLevel(level)

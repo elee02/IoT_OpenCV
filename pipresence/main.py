@@ -16,15 +16,16 @@ import click
 from pipresence.config import Config
 
 @click.command()
-@click.option('--verbose', '-v', is_flag=True, default=False, help='Enable verbose output')
+@click.option('--verbose', '-v', is_flag=True, help='Enable verbose output')
 @click.option('--infer', is_flag=True, help='Run inference on the camera feed or `input_path`')
 @click.option('--camera', is_flag=True, help='Use device camera for real-time recognition. If not given, inference on the `input_path` is automatically chosen.')
 @click.option('--encode', is_flag=True, help='Encode the preprocessed images in the given directory')
 @click.option('--input-dir', default='data/images',type=str, help='Input directory for images that have the structured raw face images.')
 @click.option('--output-dir', default='data/known_faces', type=str, help='Output directory to save the detected faces')
 def main(verbose, infer, camera, encode, input_dir, output_dir,):
+    if verbose:
+        Config.set_verbose(True)
     Config.update_config(
-            verbose = verbose,
             input_directory = input_dir,
             output_directory = output_dir
         )
