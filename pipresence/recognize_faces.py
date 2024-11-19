@@ -113,4 +113,13 @@ class FaceRecognizer(Config):
         if not recognized:
             print("[INFO] Face not recognized, marking as Unknown")
             # Annotate the unrecognized face in the image
-            cv2.putText(image, "Unknown", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            draw_bounding_box(
+                    img = image,
+                    label = f"Unknown",
+                    color = (0, 255, 0),
+                    confidence = detection["confidence"],
+                    x = x,
+                    y = y,
+                    x_plus_w = x_plus_w,
+                    y_plus_h = y_plus_h
+                )
