@@ -1,4 +1,9 @@
 import cv2
+from pipresence.config import Config
+
+
+logger = Config.logger
+
 
 def draw_bounding_box(img, label, color, confidence, x, y, x_plus_w, y_plus_h):
     """
@@ -14,7 +19,7 @@ def draw_bounding_box(img, label, color, confidence, x, y, x_plus_w, y_plus_h):
         y_plus_h (int): Y-coordinate of the bottom-right corner of the bounding box.
     """
     label = f"{label} ({confidence:.2f})"
-    print(f"[DEBUG] Bounding box at: {x}, {y}, {x_plus_w}, {y_plus_h} with confidence: {confidence}")
+    logger.debug(f"Bounding box at: {x}, {y}, {x_plus_w}, {y_plus_h} with confidence: {confidence}, person: {label}")
     cv2.rectangle(img, (x, y), (x_plus_w, y_plus_h), color, 2)
     cv2.putText(img, label, (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
@@ -22,14 +27,14 @@ def draw_bounding_box(img, label, color, confidence, x, y, x_plus_w, y_plus_h):
 def contains_one_person(detections: list[dict]) -> bool:
     # Check if any faces were detected
     if len(detections) == 0:
-        print(f"[WARNING] No faces found from the camera feed")
+        logger.warning(f"No faces found from the camera feed")
         return False
     # If multiple faces found, select the one with highest confidence
     elif len(detections) > 1:
-        print(f"[INFO] Multiple faces ({len(detections)}) found in the camera feed, selecting highest confidence detection")
+        logger.info(f"Multiple faces ({len(detections)}) found in the camera feed, selecting highest confidence detection")
         # Sort detections by confidence and take the highest
         detection = max(detections, key=lambda x: x["confidence"])
-        print(f"[INFO] Selected face with confidence: {detection['confidence']:.3f}")
+        logger.info(f"Selected face with confidence: {detection['confidence']:.3f}")
     return True
 
 

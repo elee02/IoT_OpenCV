@@ -26,7 +26,7 @@ class Config:
 
     # Setup logging
     logger = logging.getLogger('pipresence')
-    logger.setLevel()
+    logger.setLevel(log_level)
     
     # Create console handler with formatting
     ch = logging.StreamHandler()
