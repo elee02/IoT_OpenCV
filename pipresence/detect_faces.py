@@ -4,8 +4,6 @@ import cv2
 import cv2.dnn
 import numpy as np
 
-from ultralytics.utils import ASSETS, yaml_load
-from ultralytics.utils.checks import check_yaml
 from pipresence.config import Config
 
 class FaceDetector(Config):

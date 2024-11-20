@@ -14,10 +14,8 @@ from pipresence.detect_faces import FaceDetector
 from pipresence.recognize_faces import FaceRecognizer
 
 class ImagePreprocessor(Config):
-    def __init__(self, input_directory=None, output_directory=None):
+    def __init__(self):
         super().__init__()
-        self.input_directory = input_directory or self.input_directory
-        self.output_directory = output_directory or self.output_directory
         self.detector = FaceDetector()
         self.recognizer = FaceRecognizer()
 
@@ -42,7 +40,7 @@ class ImagePreprocessor(Config):
     def process_database_images(self):
         """Process all images in the database structure"""
         if not os.path.exists(self.output_directory):
-            os.makedirs(self.output_directory)
+            os.makedirs(self.output_directory, exist_ok=True)
         
         processed_count = 0
         error_count = 0

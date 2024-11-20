@@ -1,10 +1,11 @@
 import logging
 
+
 class Config:
     # Paths to models
     yolo_model_path = 'data/models/yolov8n-face.onnx'
     mobilefacenet_model_path = 'data/models/mobilefacenet_fixed.onnx'
-    
+
     # Directories for input and output
     input_directory = 'data/images'
     output_directory = 'data/known_faces'
@@ -22,7 +23,7 @@ class Config:
     
     # Logging
     verbose = False
-    log_level = logging.DEBUG if verbose else logging.WARNING
+    log_level = logging.WARNING
 
     # Setup logging
     logger = logging.getLogger('pipresence')
@@ -65,5 +66,5 @@ class Config:
         cls.logger.info(f"Recognition Threshold: {cls.recognition_threshold}")
         cls.logger.info(f"Image Size: {cls.image_size}")
         cls.logger.info(f"Face Image Size: {cls.face_image_size}")
-        cls.logger.info(f"Log Level: {cls.log_level}")
+        cls.logger.info(f"Log Level: {cls.log_level} (10 - Debug, 30 - Warning)")
         cls.logger.info(f"Embeddings File: {cls.embeddings_file}")
