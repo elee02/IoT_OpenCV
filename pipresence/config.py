@@ -12,7 +12,8 @@ class Config:
     
     # Detection and recognition thresholds
     detection_threshold = 0.25
-    recognition_threshold = 0.775
+    # Recommended - 0.735. Alternative - 0.775
+    recognition_threshold = 0.735  
     
     # Image preprocessing configurations
     image_size = (640, 640)
@@ -69,3 +70,4 @@ class Config:
         cls.logger.info(f"Face Image Size: {cls.face_image_size}")
         cls.logger.info(f"Log Level: {cls.log_level} (10 - Debug, 30 - Warning)")
         cls.logger.info(f"Embeddings File: {cls.embeddings_file}")
+        cls.logger.info(f"Multiple face integration method: {cls.integration_method}")
