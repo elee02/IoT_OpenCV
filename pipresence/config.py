@@ -12,13 +12,14 @@ class Config:
     
     # Detection and recognition thresholds
     detection_threshold = 0.25
-    recognition_threshold = 0.45
+    recognition_threshold = 0.775
     
     # Image preprocessing configurations
     image_size = (640, 640)
     face_image_size = (112, 112)
     
     # Path to embeddings file
+    integration_method="weighted"
     embeddings_file = 'data/encodings/face_embeddings.pkl'
     
     # Logging

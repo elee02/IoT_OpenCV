@@ -8,7 +8,8 @@ import pickle
 from pipresence.config import Config
 from pipresence.tools.utils import (
     contains_one_person,
-    extract_face
+    extract_face,
+    add_person_to_database
 )
 from pipresence.detect_faces import FaceDetector
 from pipresence.recognize_faces import FaceRecognizer
@@ -35,7 +36,7 @@ class ImagePreprocessor(Config):
         if not contains_one_person(detections):
             return None
         face_image = extract_face(image, detections)
-        return face_image
+        return face_image, detections
 
     def process_database_images(self):
         """Process all images in the database structure"""
@@ -71,7 +72,7 @@ class ImagePreprocessor(Config):
                 self.logger.info(f"Processing {input_image_path}")
                 
                 # Process the image
-                face_image = self.process_input_image(input_image_path)
+                face_image, detections = self.process_input_image(input_image_path)
                 
                 if face_image is not None:
                     embedding = self.recognizer.recognize_face(face_image)
@@ -85,8 +86,7 @@ class ImagePreprocessor(Config):
                     error_count += 1
             if embeddings:
                 # Average the embeddings from different profiles to get a more robust representation
-                average_embedding = np.mean(embeddings, axis=0)
-                database[person_name] = average_embedding
+                add_person_to_database(database, person_name, embeddings)
                 self.logger.info(f"Added {person_name} to the known faces database")
         # Save embeddings to a file for future use
         with open(self.embeddings_file, 'wb') as f:
