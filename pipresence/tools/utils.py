@@ -138,18 +138,22 @@ def draw_bounding_box(img, label, color, confidence, x, y, x_plus_w, y_plus_h):
     cv2.putText(img, label, (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
 
-def contains_one_person(detections: list[dict]) -> bool:
+def contains_one_person(detections: list[dict]) -> tuple[bool, dict]:
     # Check if any faces were detected
     if len(detections) == 0:
         logger.warning(f"No faces found from the camera feed")
-        return False
+        return False, {}
     # If multiple faces found, select the one with highest confidence
     elif len(detections) > 1:
         logger.info(f"Multiple faces ({len(detections)}) found in the camera feed, selecting highest confidence detection")
         # Sort detections by confidence and take the highest
-        detection = max(detections, key=lambda x: x["confidence"])
-        logger.info(f"Selected face with confidence: {detection['confidence']:.3f}")
-    return True
+        detection = max(
+            detections, 
+            key=lambda x: x["box"][2] * x["box"][3] * pow(x["scale"], 2)
+        )
+        logger.info(f"Selected face with area: {detection['box'][2] * detection['scale']:.3f}x{detection['box'][3] * detection['scale']:.3f}")
+        return True, detection
+    return True, detections[0]
 
 def draw_detections(original_image: np.ndarray, detections: list[dict]):
     detection = detections[0]

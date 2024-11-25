@@ -81,8 +81,7 @@ class FaceRecognizer(Config):
             self.logger.error(f"Embedding comparison failed: {str(e)}")
             return False, 0
     
-    def annotate_recognized(self, image, detections, database):
-        detection = detections[0]
+    def annotate_recognized(self, image, detection, database):
         x = round(detection["box"][0] * detection["scale"])
         y = round(detection["box"][1] * detection["scale"])
         x_plus_w = round((detection["box"][0] + detection["box"][2]) * detection["scale"])

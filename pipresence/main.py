@@ -57,11 +57,11 @@ def main(verbose, infer, camera, encode, input_dir, output_dir,):
                 # Detect faces in the current frame
                 logger.info("Detecting faces in the current frame")
                 detections = detector.detect_faces(frame)
-                
-                if not contains_one_person(detections):
+                contains, detection = contains_one_person(detections)
+                if not contains:
                     break
 
-                recognizer.annotate_recognized(frame, detections, database)
+                recognizer.annotate_recognized(frame, detection, database)
 
                 # Display the video feed with annotations
                 cv2.imshow('PiPresence - Attendance Recognition', frame)
@@ -90,14 +90,14 @@ def main(verbose, infer, camera, encode, input_dir, output_dir,):
             for image in images:
                 img = cv2.imread(os.path.join(Config.input_directory, image))
                 detections = detector.detect_faces(img)
-
-                if not contains_one_person(detections):
+                contains, detection = contains_one_person(detections)
+                if not contains:
                     break
                 
-                recognizer.annotate_recognized(img, detections, database)
+                recognizer.annotate_recognized(img, detection, database)
 
                 # Save the recognized face
-                cv2.imwrite(os.path.join(Config.output_directory, "[id]",image), img)
+                cv2.imwrite(os.path.join(Config.output_directory, f"[id]{image}"), img)
                 logger.info(f"Saved recognized face to {Config.output_directory}")
     else:
         logger.critical(f"Please, provide the options!")
