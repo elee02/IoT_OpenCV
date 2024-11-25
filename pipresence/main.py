@@ -18,8 +18,8 @@ from pipresence.config import Config
 @click.option('--infer', is_flag=True, help='Run inference on the camera feed or `input_path`')
 @click.option('--camera', is_flag=True, help='Use device camera for real-time recognition. If not given, inference on the `input_path` is automatically chosen.')
 @click.option('--encode', is_flag=True, help='Encode the preprocessed images in the given directory')
-@click.option('--input-dir', default='data/images',type=str, help='Input directory for images that have the structured raw face images.')
-@click.option('--output-dir', default='data/known_faces', type=str, help='Output directory to save the detected faces')
+@click.option('--input-dir',type=str, help='Input directory for images that have the structured raw face images.')
+@click.option('--output-dir', type=str, help='Output directory to save the detected faces')
 def main(verbose, infer, camera, encode, input_dir, output_dir,):
     logger = Config.logger
     Config.set_verbose(verbose=verbose)
@@ -76,6 +76,12 @@ def main(verbose, infer, camera, encode, input_dir, output_dir,):
             cv2.destroyAllWindows()
             logger.info("Camera feed closed, application terminated")
         else:
+            if not input_dir:
+                logger.error(f"Please, provide at least --input-dir for inference")
+                return -1
+            if not output_dir:
+                logger.warning(f"Setting --output-dir to {input_dir}...")
+                Config.update_config(output_directory=input_dir)
             images = os.listdir(Config.input_directory)
             # Create output directory for recognized images
             if not os.path.exists(Config.output_directory):
@@ -91,7 +97,7 @@ def main(verbose, infer, camera, encode, input_dir, output_dir,):
                 recognizer.annotate_recognized(img, detections, database)
 
                 # Save the recognized face
-                cv2.imwrite(os.path.join(Config.output_directory, image), img)
+                cv2.imwrite(os.path.join(Config.output_directory, "[id]",image), img)
                 logger.info(f"Saved recognized face to {Config.output_directory}")
     else:
         logger.critical(f"Please, provide the options!")
