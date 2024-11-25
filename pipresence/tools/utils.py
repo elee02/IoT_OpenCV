@@ -61,20 +61,26 @@ def compute_clustered_embedding(embeddings):
     """
         # Convert embeddings to a numpy array and make sure it is float32 (required by faiss)
     embeddings = np.array(embeddings).astype('float32')
-    
+
+    if embeddings.shape[0] == 0:
+        raise ValueError("No embeddings provided to compute the centroid.")
+
     if embeddings.shape[0] < 2:
         # If there's only one embedding, we return it directly
         return embeddings[0]
 
-    # Number of clusters is 1 since we want a centroid of all the given embeddings
-    n_clusters = 1
+    # Adjust the number of clusters based on the number of embeddings
+    n_clusters = min(embeddings.shape[0], 1)  # Ensure clusters are <= number of embeddings
     d = embeddings.shape[1]  # Dimensionality of the embeddings
 
     # Create a Faiss KMeans object
-    kmeans = faiss.Kmeans(d, n_clusters, niter=20, verbose=False)
+    kmeans = faiss.Kmeans(d, n_clusters, niter=20, verbose=True)
     
     # Train the KMeans model using the embeddings
-    kmeans.train(embeddings)
+    try:
+        kmeans.train(embeddings)
+    except RuntimeError as e:
+        raise RuntimeError(f"KMeans training failed: {e}")
     
     # The centroid is in kmeans.centroids_
     centroid = kmeans.centroids[0]
