@@ -124,3 +124,4 @@ class FaceRecognizer(Config):
                     x_plus_w = x_plus_w,
                     y_plus_h = y_plus_h
                 )
+            

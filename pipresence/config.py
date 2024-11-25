@@ -45,6 +45,7 @@ class Config:
     def update_config(cls, **kwargs):
         for key, value in kwargs.items():
             if hasattr(cls, key):
+                cls.logger.info(f"Updating the variable: Config.{key}={value}")
                 setattr(cls, key, value)
             else:
                 cls.logger.warning(f"{key} is not a valid attribute of Config")
