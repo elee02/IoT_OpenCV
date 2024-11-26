@@ -2,28 +2,19 @@
 <img src="data/logo/PiPresence_readme.jpg" width=500>
 </h1>
 
-## Revolutionizing Attendance with the Power of Edge Computing
+## Revolutionizing Attendance with Edge Computing and Deep Learning
 
-Welcome to **PiPresence**—the ultimate attendance solution designed for modern, edge-powered environments. Built on the versatile Raspberry Pi 4B, PiPresence merges the ingenuity of computer vision with seamless, on-device processing to deliver accurate and real-time attendance tracking. No servers. No delays. Just instant, reliable presence detection right where you need it.
-
-With **PiPresence**, witness the future of attendance—automated, intelligent, and powered by the device in your hand.
-
----
-
-Follow the guide below to embark on this journey of cutting-edge attendance automation. Let’s get started!
-
-# Automatic Attendance Taking Software for Raspberry Pi 4B
-
-## Overview
-
-This project is a Python-based tool developed as a school project to automate attendance taking using a Raspberry Pi 4B and a camera. The software runs on the edge device, capturing images and processing them to recognize and record attendance without the need for manual input.
+Welcome to **PiPresence**—an automated attendance tracking solution powered by YOLOv8 and MobileFaceNet, designed to run efficiently on edge devices like the Raspberry Pi 4B. By leveraging state-of-the-art deep learning models and edge computing, PiPresence delivers accurate, real-time face detection and recognition without requiring external servers.
 
 ## Features
 
-- **Real-time Image Capture**: Utilizes the Raspberry Pi camera module to capture images.
-- **Face Recognition**: Identifies individuals using facial recognition algorithms.
-- **Attendance Logging**: Records attendance data with timestamps.
-- **Edge Processing**: All processing is done on the Raspberry Pi, ensuring data privacy and reducing the need for external servers.
+- **Advanced Face Detection**: Uses YOLOv8n for efficient and accurate face detection
+- **Robust Face Recognition**: Implements MobileFaceNet for reliable face recognition
+- **Multiple Profile Support**: Handles left, front, and right face profiles for better accuracy
+- **Edge Processing**: All computations performed locally on the Raspberry Pi
+- **Real-time Processing**: Supports both real-time camera feed and batch image processing
+- **Flexible Integration**: Choice of weighted average, clustering, or distance-based methods for face embedding
+- **Comprehensive Logging**: Detailed logging system with configurable verbosity
 
 ## Hardware Requirements
 
@@ -33,99 +24,101 @@ This project is a Python-based tool developed as a school project to automate at
 - Power Supply for Raspberry Pi
 - Optional: Monitor, Keyboard, and Mouse for setup
 
-## Software Requirements
+## Software Dependencies
 
-- Raspbian OS (Raspberry Pi OS)
-- Python 3.x
-- Required Python Libraries:
-  - `opencv-python`
-  - `face_recognition`
-  - `numpy`
-  - `Pillow`
+- Python 3.9 or higher
+- Poetry for dependency management
+- Key libraries (automatically managed by Poetry):
+  - OpenCV Python
+  - ONNX Runtime
+  - NumPy
+  - FAISS-CPU
+  - Click
+  - Protobuf
 
 ## Installation
 
-### 1. Set Up Raspberry Pi
-
-- Install Raspbian OS on your MicroSD card.
-- Boot up the Raspberry Pi with the camera connected.
-- Enable the camera interface:
-
-  ```bash
-  sudo raspi-config
-  ```
-
-  Navigate to **Interface Options** and enable the camera.
-
-### 2. Update System Packages
-
-```bash
-sudo apt-get update
-sudo apt-get upgrade
-```
-
-### 3. Install Python and Pip
-
-```bash
-sudo apt-get install python3-pip
-```
-
-### 4. Install Required Python Libraries
-
-```bash
-pip3 install opencv-python face_recognition numpy Pillow
-```
-
-### 5. Clone the Repository
-
+1. **Clone the Repository**
 ```bash
 git clone <repository_url>
-cd <project_directory>
+cd pipresence
+```
+
+2. **Install Poetry** (if not already installed)
+```bash
+curl -sSL https://install.python-poetry.org | python3 -
+```
+
+3. **Install Dependencies**
+```bash
+poetry install
+```
+
+4. **Set Up Environment**
+```bash
+# Activate the virtual environment
+poetry shell
+```
+
+## Usage
+
+PiPresence offers several operation modes:
+
+### 1. Encode Face Database
+Process and encode faces from input images:
+```bash
+pipresence --encode --input-dir /path/to/raw/images --output-dir /path/to/processed/faces
+```
+
+### 2. Real-time Recognition
+Run real-time face recognition using camera feed:
+```bash
+pipresence --infer --camera --verbose
+```
+
+### 3. Batch Processing
+Process a directory of images:
+```bash
+pipresence --infer --input-dir /path/to/images --output-dir /path/to/output
+```
+
+## Project Structure
+
+```
+pipresence/
+├── data/
+│   ├── models/              # Pre-trained models
+│   │   ├── yolov8n-face.onnx
+│   │   └── mobilefacenet_fixed.onnx
+│   ├── encodings/           # Face embeddings database
+│   └── images/             # Input images
+├── pipresence/
+│   ├── detect_faces.py     # Face detection using YOLOv8
+│   ├── recognize_faces.py  # Face recognition using MobileFaceNet
+│   ├── preprocess.py      # Image preprocessing
+│   ├── config.py          # Configuration settings
+│   ├── main.py           # Main application logic
+│   └── tools/
+│       └── utils.py      # Utility functions
+└── pyproject.toml        # Project dependencies and metadata
 ```
 
 ## Configuration
 
-- **Known Faces**: Place images of individuals to be recognized in the `known_faces` directory.
-- **Settings**: Modify any configurable parameters in `config.py` (if available).
-
-## Usage
-
-```bash
-python3 main.py
-```
-
-- The script will start the camera and begin processing.
-- Attendance logs will be saved in the `logs` directory as a CSV file.
-
-## Directory Structure
-
-```
-project_directory/
-│
-├── known_faces/
-│   ├── person1.jpg
-│   ├── person2.jpg
-│   └── ...
-├── logs/
-│   └── attendance_log.csv
-├── src/
-│   ├── main.py
-│   ├── camera_module.py
-│   ├── face_recognition_module.py
-│   └── ...
-├── config.py
-└── README.md
-```
-
-## Troubleshooting
-
-- **Camera Not Found**: Ensure the camera is enabled in the Raspberry Pi settings and connected properly.
-- **Module Errors**: Verify that all Python libraries are installed.
-- **Recognition Issues**: Make sure the known faces are clear and well-lit images.
+Key parameters can be modified in `config.py`:
+- Detection and recognition thresholds
+- Image preprocessing settings
+- Model paths
+- Directory paths
+- Logging verbosity
 
 ## Contributing
 
-We welcome contributions! Please fork the repository and submit a pull request for any enhancements or bug fixes.
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests (if available)
+5. Submit a pull request
 
 ## License
 
@@ -133,7 +126,11 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 
 ## Acknowledgments
 
-- Special thanks to the school faculty and peers for their support.
-- Libraries and resources:
-  - [OpenCV](https://opencv.org/)
-  - [face_recognition](https://github.com/ageitgey/face_recognition)
+- YOLOv8 for efficient face detection
+- MobileFaceNet for accurate face recognition
+- ONNX Runtime for optimized model inference
+- FAISS for efficient similarity search
+
+---
+
+For issues, feature requests, or contributions, please open an issue or pull request on the repository.
