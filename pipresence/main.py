@@ -7,7 +7,8 @@ from pipresence.recognize_faces import FaceRecognizer
 from pipresence.preprocess import ImagePreprocessor
 from pipresence.tools.utils import (
     contains_one_person,
-    load_database
+    load_database,
+    have_dirs
 )
 import os
 import click
@@ -36,6 +37,8 @@ def main(verbose, infer, camera, encode, input_dir, output_dir,):
     recognizer = FaceRecognizer()
 
     if encode:
+        if not have_dirs(input_dir, output_dir):
+            return -1
         preprocessor = ImagePreprocessor()
         success, fail = preprocessor.process_database_images()
         logger.info(f"Total processed images: {success}")
@@ -76,12 +79,8 @@ def main(verbose, infer, camera, encode, input_dir, output_dir,):
             cv2.destroyAllWindows()
             logger.info("Camera feed closed, application terminated")
         else:
-            if not input_dir:
-                logger.error(f"Please, provide at least --input-dir for inference")
+            if not have_dirs(input_dir, output_dir):
                 return -1
-            if not output_dir:
-                logger.warning(f"Setting --output-dir to {input_dir}...")
-                Config.update_config(output_directory=input_dir)
             images = os.listdir(Config.input_directory)
             # Create output directory for recognized images
             if not os.path.exists(Config.output_directory):

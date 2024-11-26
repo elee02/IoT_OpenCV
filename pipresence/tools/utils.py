@@ -185,3 +185,13 @@ def load_database():
     else:
         logger.error(f"[ERROR] No embeddings found")
         return -1
+    
+
+def have_dirs(input_dir, output_dir):
+    if not input_dir:
+        logger.error(f"--input-dir (structured raw images folder) is not provided")
+        return False
+    if not output_dir:
+        logger.warning(f"Setting --output-dir to {input_dir}...")
+        Config.update_config(output_directory=input_dir)
+    return True
