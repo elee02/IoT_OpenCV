@@ -3,10 +3,13 @@ import numpy as np
 import cv2
 import cv2.dnn
 import numpy as np
+import time
 
 from pipresence.config import Config
 
 class FaceDetector(Config):
+    
+    detection_times = []
 
     def __init__(self, model_path=None):
         super().__init__()
@@ -25,6 +28,7 @@ class FaceDetector(Config):
         Returns:
             list: List of dictionaries containing detection information such as class_id, class_name, confidence, etc.
         """
+        start_time = time.time()
         # Read the input image
         [height, width, _] = original_image.shape
 
@@ -88,5 +92,14 @@ class FaceDetector(Config):
                 "scale": scale,
             }
             detections.append(detection)
+
+        end_time = time.time()  # End timer
+        detection_time = end_time - start_time
+        self.detection_times.append(detection_time)
+        self.logger.info(f"Face detection took {detection_time:.4f} seconds")
+
+        # Calculate mean detection time
+        mean_detection_time = np.mean(self.detection_times)
+        self.logger.info(f"Mean face detection time: {mean_detection_time:.4f} seconds")
 
         return detections
