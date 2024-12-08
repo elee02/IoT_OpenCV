@@ -2,6 +2,24 @@
 <img src="data/logo/PiPresence_readme.jpg" width=500>
 </h1>
 
+## Table of Contents
+- [Table of Contents](#table-of-contents)
+- [Revolutionizing Attendance with Edge Computing and Deep Learning](#revolutionizing-attendance-with-edge-computing-and-deep-learning)
+- [Features](#features)
+- [Hardware Requirements](#hardware-requirements)
+- [Software Dependencies](#software-dependencies)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [1. Encode Face Database](#1-encode-face-database)
+  - [2. Real-time Recognition](#2-real-time-recognition)
+  - [3. Batch Processing](#3-batch-processing)
+- [Project Structure](#project-structure)
+- [Configuration](#configuration)
+- [Contributing](#contributing)
+- [License](#license)
+- [Acknowledgments](#acknowledgments)
+- [Presentation](#presentation)
+
 ## Revolutionizing Attendance with Edge Computing and Deep Learning
 
 Welcome to **PiPresence**—an automated attendance tracking solution powered by YOLOv8 and MobileFaceNet, designed to run efficiently on edge devices like the Raspberry Pi 4B. By leveraging state-of-the-art deep learning models and edge computing, PiPresence delivers accurate, real-time face detection and recognition without requiring external servers.
@@ -130,6 +148,12 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 - MobileFaceNet for accurate face recognition
 - ONNX Runtime for optimized model inference
 - FAISS for efficient similarity search
+
+## Presentation
+
+The presentation for PiPresence is available in the `Assets` folder under `/doc`. You can view it via the following link:
+
+[View PiPresence Presentation](./doc/Assets/PRESENTATION.md)
 
 ---
 

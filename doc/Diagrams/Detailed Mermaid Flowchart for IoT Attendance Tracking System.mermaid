@@ -4,12 +4,12 @@ stateDiagram-v2
 
    state CheckMode {
         [*] --> ModeCheck
-        ModeCheck --> Encode: --encode flag
+        ModeCheck --> Encode: --encode flaghttps://youtu.be/MMkmpUsqayo?si=9akhPnRFddH3Otll
         ModeCheck --> Inference: --infer flag
         ModeCheck --> Error: no flag
         Error --> [*]
     }
-
+    
     state Encode {
         [*] --> LoadPreprocessor
         LoadPreprocessor --> ProcessDatabase

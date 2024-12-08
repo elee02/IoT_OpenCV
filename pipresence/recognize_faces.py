@@ -6,8 +6,12 @@ from pipresence.config import Config
 import numpy as np
 import onnxruntime as ort
 import cv2
+import time
 
 class FaceRecognizer(Config):
+
+    recognition_times = []
+
     def __init__(self, model_path=None):
         super().__init__()
         self.mobilefacenet_model_path = model_path or self.mobilefacenet_model_path
@@ -16,6 +20,7 @@ class FaceRecognizer(Config):
         self.input_name = self.session.get_inputs()[0].name
 
     def preprocess(self, face_image):
+
         """Preprocess face image for the MobileFaceNet model"""
         if face_image is None:
             raise ValueError("Input face image is None")
@@ -82,6 +87,9 @@ class FaceRecognizer(Config):
             return False, 0
     
     def annotate_recognized(self, image, detection, database):
+
+        start_time = time.time()
+
         x = round(detection["box"][0] * detection["scale"])
         y = round(detection["box"][1] * detection["scale"])
         x_plus_w = round((detection["box"][0] + detection["box"][2]) * detection["scale"])
@@ -110,6 +118,7 @@ class FaceRecognizer(Config):
                 recognized = True
                 break
 
+
         if not recognized:
             self.logger.info("Face not recognized, marking as Unknown")
             # Annotate the unrecognized face in the image
@@ -123,4 +132,12 @@ class FaceRecognizer(Config):
                     x_plus_w = x_plus_w,
                     y_plus_h = y_plus_h
                 )
-            
+
+        end_time = time.time()  # End timer
+        recognition_time = end_time - start_time
+        self.recognition_times.append(recognition_time)
+        self.logger.info(f"Face recognition took {recognition_time:.4f} seconds")
+
+        # Calculate mean detection time
+        mean_recognition_time = np.mean(self.recognition_times)
+        self.logger.info(f"Mean face recognition time: {mean_recognition_time:.4f} seconds")            
