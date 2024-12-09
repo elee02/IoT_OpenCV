@@ -41,7 +41,7 @@ class FaceDetector(Config):
         scale = length / self.image_size[0]
 
         # Preprocess the image and prepare blob for model
-        blob = cv2.dnn.blobFromImage(image, scalefactor=1 / 255, size=(640, 640), swapRB=True)
+        blob = cv2.dnn.blobFromImage(image, scalefactor=1 / 255, size=self.image_size, swapRB=True)
         self.model.setInput(blob)
 
         # Perform inference
